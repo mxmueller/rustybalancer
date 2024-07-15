@@ -38,8 +38,5 @@ COPY --from=builder /code/target/release/deployment-agent deployment-agent
 # Set user to non-root unless root is required for your app
 USER 1001
 
-# Indicate what port the server is running on
-EXPOSE 3000
-
 # Run the server
 CMD ["/app/deployment-agent"]

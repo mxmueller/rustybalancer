@@ -28,7 +28,7 @@ pub async fn http() {
     let app = Router::new()
         .route("/", get(greet));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8090));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 2548));
     println!("Listening on {}", addr);
 
     // Starte den Server
