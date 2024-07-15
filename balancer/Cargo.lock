@@ -107,10 +107,12 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "futures",
+ "futures-util",
  "hyper",
  "tokio",
  "tokio-tungstenite 0.15.0",
  "tower",
+ "url",
 ]
 
 [[package]]
