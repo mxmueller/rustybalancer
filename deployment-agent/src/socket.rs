@@ -1,60 +1,51 @@
-use futures_util::{SinkExt, StreamExt};
-use std::io::{self, Write};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-use url::Url;
-use tokio::sync::mpsc;
-use tokio::task;
+use axum::{
+    extract::ws::{Message, WebSocket, WebSocketUpgrade},
+    response::IntoResponse,
+    routing::get,
+    Router,
+};
+use futures::stream::StreamExt;
+use std::net::SocketAddr;
 
 pub async fn socket() {
-    let url = Url::parse("ws://127.0.0.1:3000/ws").unwrap();
-    let (ws_stream, _) = connect_async(url).await.expect("Failed to connect");
+    // Router with get (for HTTP GET).
+    // http_to_ws without round-brackets, because it's referring to the pointer of the function.
+    let app = Router::new().route("/ws", get(http_to_ws));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 2547));
 
-    println!("Connected to the server");
+    println!("Server listening on {}", addr);
 
-    let (mut write, mut read) = ws_stream.split();
-    let (tx, mut rx) = mpsc::channel::<String>(32);
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
+}
 
-    // Task zum Lesen von Nachrichten vom Server
-    task::spawn(async move {
-        while let Some(msg) = read.next().await {
-            match msg {
-                Ok(Message::Text(text)) => {
-                    println!("Received: {}", text);
-                }
-                Ok(_) => {}
-                Err(e) => {
-                    println!("Error: {}", e);
-                    break;
+async fn http_to_ws(ws: WebSocketUpgrade) -> impl IntoResponse {
+    println!("WebSocket upgrade requested");
+    ws.on_upgrade(handle_socket)
+}
+
+async fn handle_socket(mut socket: WebSocket) {
+    println!("WebSocket connection established");
+    // Await to wait for the next element of the stream to be available.
+    while let Some(msg) = socket.next().await {
+        match msg {
+            Ok(Message::Text(text)) => {
+                println!("Handling text message: {}", text);
+                let response = format!("Echo: {}", text);
+                if let Err(e) = socket.send(Message::Text(response)).await {
+                    eprintln!("Error sending message: {}", e);
+                    return;
                 }
             }
-        }
-    });
-
-    // Task zum Senden von Nachrichten an den Server
-    task::spawn(async move {
-        while let Some(text) = rx.recv().await {
-            if let Err(e) = write.send(Message::Text(text)).await {
-                eprintln!("Error sending message: {}", e);
-                break;
+            Ok(_) => {
+                println!("Received non-text message");
             }
-        }
-    });
-
-    // Erfasse Benutzereingaben und sende sie an den Server
-    loop {
-        print!("Type a message: ");
-        io::stdout().flush().unwrap();
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        let input = input.trim().to_string();
-
-        if input.is_empty() {
-            continue;
-        }
-
-        if tx.send(input).await.is_err() {
-            println!("Failed to send message");
-            break;
+            Err(e) => {
+                eprintln!("WebSocket error: {}", e);
+                return;
+            }
         }
     }
 }
