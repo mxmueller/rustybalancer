@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  server:
+  deployment-agent:
     build:
       context: ./deployment-agent
       dockerfile: Dockerfile
@@ -10,14 +10,16 @@ services:
     networks:
       - rust-network
 
-  client:
+  balancer:
     build:
       context: ./balancer
       dockerfile: Dockerfile
+    ports:
+      - "2548:2548"
     networks:
       - rust-network
     depends_on:
-      - server
+      - deployment-agent
 
 networks:
   rust-network:

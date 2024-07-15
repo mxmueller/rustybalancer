@@ -1,9 +1,15 @@
-use axum::{
-    routing::get,
-    Router,
-};
 use std::net::SocketAddr;
-use axum::response::{Html, IntoResponse};
+use std::time::Instant;
+
+use axum::{
+    http::Request,
+    middleware::{self, Next},
+    response::{Html, IntoResponse},
+    Router,
+    routing::get,
+};
+use tokio::sync::mpsc::Sender;
+use tower::ServiceBuilder;
 
 async fn greet() -> impl IntoResponse {
     let html = r#"
@@ -23,18 +29,44 @@ async fn greet() -> impl IntoResponse {
     Html(html)
 }
 
-pub async fn http() {
+pub async fn http(tx: Sender<String>) {
+    // Creates middleware stack  with a clone of the sender (tx) to log requests.
+    let middleware_stack = ServiceBuilder::new()
+        .layer(middleware::from_fn(move |req, next| {
+            let tx = tx.clone();
+            async move {
+                log_request(req, next, tx).await
+            }
+        }));
     // Creates Router.
     let app = Router::new()
-        .route("/", get(greet));
+        .route("/", get(greet))
+        .layer(middleware_stack);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8090));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 2548));
     println!("Listening on {}", addr);
 
-    // Starte den Server
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
 }
 
+// Logs each incoming request with the time needed to handle the request.
+async fn log_request<B>(req: Request<B>, next: Next<B>, tx: Sender<String>) -> impl IntoResponse {
+    let method = req.method().clone();
+    let uri = req.uri().clone();
+    let start = Instant::now();
+
+    // Sends message to the sender.
+    if let Err(e) = tx.send(format!("{} {}", method, uri)).await {
+        eprintln!("Failed to send message: {}", e);
+    }
+
+    let response = next.run(req).await;
+
+    let duration = start.elapsed();
+    println!("{} {} - {:?}", method, uri, duration);
+
+    response
+}

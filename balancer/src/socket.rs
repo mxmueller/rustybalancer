@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tokio::task;
 
 pub async fn socket() {
-    let url = Url::parse("ws://server:2547/ws").unwrap();
+    let url = Url::parse("ws://deployment-agent:2547/ws").unwrap();
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect");
 
     println!("Connected to the server");
@@ -29,6 +29,7 @@ pub async fn socket() {
         }
     });
 
+    // Task for sending messages to main via the channel.
     task::spawn(async move {
         while let Some(text) = rx.recv().await {
             if let Err(e) = write.send(Message::Text(text)).await {
