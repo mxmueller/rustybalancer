@@ -6,59 +6,46 @@ use axum::{
 };
 use futures::stream::StreamExt;
 use std::net::SocketAddr;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use tokio::task;
-
 
 pub async fn socket() {
-    // Initialize the router with the WebSocket route.
-    let app = Router::new().route("/ws", get(handle_ws_upgrade));
-
-    // Define the address for the server to listen on.
+    // Router with get (for HTTP GET).
+    // http_to_ws without round-brackets, because it's referring to the pointer of the function.
+    let app = Router::new().route("/ws", get(http_to_ws));
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
-    // Start the server.
+    println!("Server listening on {}", addr);
+
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
 }
 
-// Handler to upgrade HTTP connection to WebSocket connection.
-async fn handle_ws_upgrade(ws: WebSocketUpgrade) -> impl IntoResponse {
+async fn http_to_ws(ws: WebSocketUpgrade) -> impl IntoResponse {
+    println!("WebSocket upgrade requested");
     ws.on_upgrade(handle_socket)
 }
 
-// Handle the WebSocket connection.
-async fn handle_socket(socket: WebSocket) {
-    let socket = Arc::new(Mutex::new(socket));
-
-    while let Some(msg) = socket.lock().await.next().await {
+async fn handle_socket(mut socket: WebSocket) {
+    println!("WebSocket connection established");
+    // Await to wait for the next element of the stream to be available.
+    while let Some(msg) = socket.next().await {
         match msg {
-            Ok(msg) => {
-                let socket = Arc::clone(&socket);
-                task::spawn(async move {
-                    handle_message(msg, socket).await;
-                });
+            Ok(Message::Text(text)) => {
+                println!("Handling text message: {}", text);
+                let response = format!("Echo: {}", text);
+                if let Err(e) = socket.send(Message::Text(response)).await {
+                    eprintln!("Error sending message: {}", e);
+                    return;
+                }
+            }
+            Ok(_) => {
+                println!("Received non-text message");
             }
             Err(e) => {
                 eprintln!("WebSocket error: {}", e);
                 return;
             }
         }
-    }
-}
-
-// Function to handle individual messages.
-async fn handle_message(msg: Message, socket: Arc<Mutex<WebSocket>>) {
-    match msg {
-        Message::Text(text) => {
-            // Echo the received text message back to the client.
-            if let Err(e) = socket.lock().await.send(Message::Text(text)).await {
-                eprintln!("Error sending message: {}", e);
-            }
-        }
-        _ => {}
     }
 }

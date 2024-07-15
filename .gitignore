@@ -1,0 +1,42 @@
+# Rust specific
+balancer/target/
+deployment-agent/target/
+**/*.rs.bk
+
+# Cargo
+# The directory where Cargo puts all build artifacts and intermediate files.
+balancer/target/
+deployment-agent/target/
+balancer/Cargo.lock
+deployment-agent/Cargo.lock
+
+# Miscellaneous
+*.rs.bk
+*.swp
+*.swo
+*.swn
+*.bak
+
+# Ignoring lock files created by package managers
+/.cargo/
+.cargo-lock
+
+# IDEs and editors
+# Ignore project-specific settings files and directories
+balancer/.idea/
+deployment-agent/.idea/
+balancer/.vscode/
+deployment-agent/.vscode/
+balancer/*.code-workspace
+deployment-agent/*.code-workspace
+
+# Operating system files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Other files
+*.log
+*.tmp
+*.temp
