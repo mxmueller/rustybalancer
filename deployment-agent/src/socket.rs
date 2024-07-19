@@ -4,8 +4,9 @@ use axum::{
     routing::get,
     Router,
 };
-use futures::stream::StreamExt;
 use std::net::SocketAddr;
+use std::time::Duration;
+use serde::{Deserialize, Serialize};
 
 pub async fn socket() {
     // Router with get (for HTTP GET).
@@ -26,26 +27,24 @@ async fn http_to_ws(ws: WebSocketUpgrade) -> impl IntoResponse {
     ws.on_upgrade(handle_socket)
 }
 
+#[derive(Serialize, Deserialize)]
+pub enum Event {
+    Echo { message: String },
+    // Other variants...
+}
+
 async fn handle_socket(mut socket: WebSocket) {
     println!("WebSocket connection established");
     // Await to wait for the next element of the stream to be available.
-    while let Some(msg) = socket.next().await {
-        match msg {
-            Ok(Message::Text(text)) => {
-                println!("Handling text message: {}", text);
-                let response = format!("Echo: {}", text);
-                if let Err(e) = socket.send(Message::Text(response)).await {
-                    eprintln!("Error sending message: {}", e);
-                    return;
-                }
-            }
-            Ok(_) => {
-                println!("Received non-text message");
-            }
-            Err(e) => {
-                eprintln!("WebSocket error: {}", e);
+    let mut interval = tokio::time::interval(Duration::from_secs(10));
+
+    loop {
+        // Periodically send messages
+        interval.tick().await; // waiting for the next tick
+            let response = "Periodic update message".to_string();
+            if let Err(e) = socket.send(Message::Text(response)).await {
+                eprintln!("Error sending periodic message: {}", e);
                 return;
             }
-        }
     }
 }

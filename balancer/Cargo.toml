@@ -6,9 +6,12 @@ edition = "2021"
 [dependencies]
 axum = { version = "0.6", features = ["ws"] }
 tokio = { version = "1", features = ["full"] }
-tower = "0.4"
+tower = { version = "0.4"}
+tower-http = { version = "0.5.2", features = ["add-extension"] }
 hyper = { version = "0.14", features = ["full"] }
 tokio-tungstenite = "0.15"
 futures = "0.3.30"
 futures-util = "0.3.30"
 url = "2.5.2"
+serde = { version = "1.0.204", features = ["derive"] }
+serde_json = "1.0.120"

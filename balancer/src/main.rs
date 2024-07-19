@@ -1,27 +1,27 @@
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use crate::http::http;
-use crate::socket::{socket};
-use tokio::sync::mpsc::{Receiver};
+use crate::socket::{connect_socket};
 
 mod socket;
 mod http;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
-    let (tx, mut rx) = mpsc::channel(32);
+    let (ws_tx, ws_rx) = connect_socket().await;
+
+    let (log_tx, mut log_rx) = mpsc::channel(32);
+
+    let shared_ws_rx = Arc::clone(&ws_rx);
+    let shared_ws_tx = Arc::clone(&ws_tx);
 
     tokio::spawn(async move {
-        http::http(tx).await;
+        http(log_tx, shared_ws_tx, shared_ws_rx).await;
     });
 
     tokio::spawn(async move {
-        socket(tx).await;
+        while let Some(log) = log_rx.recv().await {
+            println!("Log: {}", log);
+        }
     });
-
-    while let Some(message) = rx.recv().await {
-        println!("Received request: {}", message);
-    }
-
-
-
 }
