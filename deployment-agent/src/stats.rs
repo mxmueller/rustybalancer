@@ -4,7 +4,22 @@ use bollard::models::{ContainerInspectResponse, ContainerStateStatusEnum};
 use bollard::service::{InspectServiceOptions, Service};
 use bollard::errors::Error;
 use futures_util::stream::StreamExt;
+use serde::Serialize;
 use serde_json::json;
+
+#[derive(Serialize)]
+pub struct ContainerStats {
+    pub container_id: String,
+    pub name: String,
+    pub status: String,
+    pub ip_address: String,
+    pub cpu_usage: f64,
+    pub memory_usage: f64,
+    pub rx_bytes: u64,
+    pub tx_bytes: u64,
+    pub service_id: Option<String>,
+    pub published_ports: Option<String>,
+}
 
 async fn container_stats(container_id: &str) -> Result<Stats, Error> {
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
@@ -51,7 +66,7 @@ fn extract_published_ports(service: &Service) -> String {
     "N/A".to_string()
 }
 
-pub async fn display_stats() -> Result<(), Error> {
+pub async fn display_stats() -> Result<Vec<ContainerStats>, Error> {
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
     let options = Some(ListContainersOptions::<String> {
@@ -61,6 +76,8 @@ pub async fn display_stats() -> Result<(), Error> {
 
     let containers = docker.list_containers(options).await?;
     println!("Found {} containers", containers.len()); // Debug-Ausgabe
+
+    let mut stats_vec = Vec::new();
 
     for container in containers {
         if let Some(container_id) = container.id {
@@ -87,27 +104,37 @@ pub async fn display_stats() -> Result<(), Error> {
                 networks.values().map(|v| v.tx_bytes).sum::<u64>()
             });
 
-            println!("Container ID: {}", container_id);
-            println!("Name: {}", name);
-            println!("Status: {}", status);
-            println!("IP Address: {}", ip_address);
-            println!("CPU Usage: {:.2}%", cpu_usage);
-            println!("Memory Usage: {:.2}%", memory_usage);
-            println!("Network Traffic: RX {} bytes, TX {} bytes", rx_bytes, tx_bytes);
+            let service_id = if let Some(labels) = inspect.config.and_then(|config| config.labels) {
+                labels.get("com.docker.swarm.service.id").cloned()
+            } else {
+                None
+            };
 
-            // Extracting service ID from container labels
-            if let Some(labels) = inspect.config.and_then(|config| config.labels) {
-                if let Some(service_id) = labels.get("com.docker.swarm.service.id") {
-                    let service_details = service_inspect(service_id).await?;
-                    let published_ports = extract_published_ports(&service_details);
-                    println!("Service ID: {}", service_id);
-                    println!("Published Ports: {}", published_ports);
-                }
-            }
+            let published_ports = if let Some(ref service_id) = service_id {
+                let service_details = service_inspect(service_id).await?;
+                Some(extract_published_ports(&service_details))
+            } else {
+                None
+            };
+
+            let container_stat = ContainerStats {
+                container_id,
+                name,
+                status,
+                ip_address,
+                cpu_usage,
+                memory_usage,
+                rx_bytes,
+                tx_bytes,
+                service_id,
+                published_ports,
+            };
+
+            stats_vec.push(container_stat);
         } else {
             println!("Container ID not found"); // Debug-Ausgabe
         }
     }
 
-    Ok(())
+    Ok(stats_vec)
 }

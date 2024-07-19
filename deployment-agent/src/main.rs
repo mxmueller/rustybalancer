@@ -1,6 +1,7 @@
 mod socket;
 mod swarm;
 mod stats;
+mod http;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
@@ -8,13 +9,8 @@ async fn main() {
         eprintln!("Error: {}", e);
     }
 
-    println!("FOOOO");
+    // Start the HTTP server
+    http::serve().await;
 
-    if let Err(e) = stats::display_stats().await {
-        eprintln!("Error: {}", e);
-    } else {
-        println!("FOOOO");
-    }
-
-    //socket::socket().await;
+    // socket::socket().await;
 }
