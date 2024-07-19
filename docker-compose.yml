@@ -6,16 +6,20 @@ services:
       context: ./deployment-agent
       dockerfile: Dockerfile
     ports:
-      - "2547:2547"
+      - "${HOST_PORT_DEPLOYMENT_AGENT}:2547"
     networks:
       - rust-network
+    volumes:
+      - "${DOCKER_SOCKET_VOLUME}:${DOCKER_SOCKET_VOLUME}"
+    environment:
+      - DOCKER_HOST=${DOCKER_HOST}
 
   balancer:
     build:
       context: ./balancer
       dockerfile: Dockerfile
     ports:
-      - "2548:2548"
+      - "${HOST_PORT_BALANCER}:2548"
     networks:
       - rust-network
     depends_on:
