@@ -7,11 +7,15 @@ use axum::{
 use std::net::SocketAddr;
 use std::time::Duration;
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
+use crate::queue::SharedQueue;
 
-pub async fn socket() {
+pub async fn socket(queue: SharedQueue) -> (mpsc::Sender<String>, mpsc::Receiver<String>) {
+    let (tx, rx) = mpsc::channel(32);
+
     // Router with get (for HTTP GET).
     // http_to_ws without round-brackets, because it's referring to the pointer of the function.
-    let app = Router::new().route("/ws", get(http_to_ws));
+    let app = Router::new().route("/ws", get(move |ws: WebSocketUpgrade| http_to_ws(ws, queue.clone())));
     let addr = SocketAddr::from(([0, 0, 0, 0], 2548));
 
     println!("Server listening on {}", addr);
@@ -20,11 +24,13 @@ pub async fn socket() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+
+    (tx, rx)
 }
 
-async fn http_to_ws(ws: WebSocketUpgrade) -> impl IntoResponse {
+async fn http_to_ws(ws: WebSocketUpgrade, queue: SharedQueue) -> impl IntoResponse {
     println!("WebSocket upgrade requested");
-    ws.on_upgrade(handle_socket)
+    ws.on_upgrade(move |socket| handle_socket(socket, queue))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -33,11 +39,33 @@ pub enum Event {
     // Other variants...
 }
 
-async fn handle_socket(mut socket: WebSocket) {
+async fn handle_socket(mut socket: WebSocket, queue: SharedQueue) {
     println!("WebSocket connection established");
     // Await to wait for the next element of the stream to be available.
     let mut interval = tokio::time::interval(Duration::from_secs(10));
 
+    // Task for sending the entire queue at regular intervals
+    let queue_sender = queue.clone();
+    tokio::spawn(async move {
+        loop {
+            // Lock the queue and serialize it
+            let queue_data = {
+                let queue = queue_sender.lock().await;
+                serde_json::to_string(&*queue).expect("Failed to serialize queue")
+            };
+
+            // Send the serialized queue as a single message
+            if let Err(e) = socket.send(Message::Text(queue_data)).await {
+                eprintln!("Error sending message: {}", e);
+                return;
+            }
+
+            // Wait before sending the queue again
+            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+        }
+    });
+
+    /*
     loop {
         // Periodically send messages
         interval.tick().await; // waiting for the next tick
@@ -47,4 +75,5 @@ async fn handle_socket(mut socket: WebSocket) {
                 return;
             }
     }
+     */
 }

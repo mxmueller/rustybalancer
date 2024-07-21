@@ -4,10 +4,14 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use stats::get_container_status;
 use http::{start_http_server, ContainerStatus, AppState};
+use crate::queue::build_queue;
+use crate::socket::socket;
 
 mod container;
 mod stats;
 mod http;
+mod queue;
+mod socket;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() -> Result<(), Error> {
@@ -33,8 +37,15 @@ async fn main() -> Result<(), Error> {
         container_stats: Arc::new(Mutex::new(container_stats)),
     };
 
+    let mut queue = build_queue().await;
+
+
     // Start the HTTP server
     start_http_server(app_state).await;
+
+    // Send messages to the websocket
+    socket(queue).await;
+
 
     Ok(())
 }
