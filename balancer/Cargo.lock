@@ -116,6 +116,8 @@ dependencies = [
  "futures-util",
  "hyper 0.14.30",
  "reqwest",
+ "serde",
+ "serde_json",
  "tokio",
  "tokio-tungstenite 0.15.0",
  "tower",

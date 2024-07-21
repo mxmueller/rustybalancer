@@ -12,7 +12,7 @@ pub async fn socket() {
     // Router with get (for HTTP GET).
     // http_to_ws without round-brackets, because it's referring to the pointer of the function.
     let app = Router::new().route("/ws", get(http_to_ws));
-    let addr = SocketAddr::from(([0, 0, 0, 0], 2547));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 2548));
 
     println!("Server listening on {}", addr);
 

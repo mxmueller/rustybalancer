@@ -1,140 +1,139 @@
 use bollard::Docker;
-use bollard::container::{StatsOptions, Stats, ListContainersOptions};
-use bollard::models::{ContainerInspectResponse, ContainerStateStatusEnum};
-use bollard::service::{InspectServiceOptions, Service};
+use bollard::container::{InspectContainerOptions, ListContainersOptions, StatsOptions};
 use bollard::errors::Error;
-use futures_util::stream::StreamExt;
 use serde::Serialize;
-use serde_json::json;
+use std::collections::HashMap;
+use std::env;
+use futures::stream::StreamExt;
+use chrono::DateTime;
+use chrono::Utc;
 
 #[derive(Serialize)]
-pub struct ContainerStats {
-    pub container_id: String,
+pub struct ContainerStatus {
+    pub id: String,
     pub name: String,
-    pub status: String,
-    pub ip_address: String,
+    pub image: String,
+    pub state: String,
+    pub ports: HashMap<String, Vec<String>>,
     pub cpu_usage: f64,
-    pub memory_usage: f64,
-    pub rx_bytes: u64,
-    pub tx_bytes: u64,
-    pub service_id: Option<String>,
-    pub published_ports: Option<String>,
+    pub memory_usage: f64, // Hier bleibt es f64
+    pub uptime: String,
 }
 
-async fn container_stats(container_id: &str) -> Result<Stats, Error> {
+pub async fn get_container_status() -> Result<Vec<ContainerStatus>, Error> {
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
-    let stats_options = Some(StatsOptions {
-        stream: false, // Set to false to get a single stats response
-        one_shot: true, // Ensure this is set
-    });
+    // Laden der Umgebungsvariablen
+    dotenv::dotenv().ok();
+    let app_identifier = env::var("APP_IDENTIFIER").expect("APP_IDENTIFIER must be set");
 
-    let mut stats_stream = docker.stats(container_id, stats_options);
-    if let Some(stats_result) = stats_stream.next().await {
-        match stats_result {
-            Ok(stats) => Ok(stats),
-            Err(e) => Err(e),
-        }
-    } else {
-        Err(Error::DockerResponseServerError {
-            status_code: 500,
-            message: "No stats received".to_string(),
-        })
-    }
-}
+    // Filter setzen, um nur Container mit dem spezifischen Label zu erhalten
+    let filters = {
+        let mut map = HashMap::new();
+        map.insert("label".to_string(), vec![format!("application={}", app_identifier)]);
+        map
+    };
 
-async fn container_inspect(container_id: &str) -> Result<ContainerInspectResponse, Error> {
-    let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
-    docker.inspect_container(container_id, None).await
-}
-
-pub async fn service_inspect(service_id: &str) -> Result<Service, Error> {
-    let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
-    docker.inspect_service(service_id, None::<InspectServiceOptions>).await
-}
-
-fn extract_published_ports(service: &Service) -> String {
-    if let Some(endpoint) = &service.endpoint {
-        if let Some(ports) = &endpoint.ports {
-            return ports
-                .iter()
-                .map(|port| port.published_port.unwrap_or(0).to_string())
-                .collect::<Vec<String>>()
-                .join(", ");
-        }
-    }
-    "N/A".to_string()
-}
-
-pub async fn display_stats() -> Result<Vec<ContainerStats>, Error> {
-    let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
-
-    let options = Some(ListContainersOptions::<String> {
+    let options = ListContainersOptions {
         all: true,
+        filters,
         ..Default::default()
-    });
+    };
 
-    let containers = docker.list_containers(options).await?;
-    println!("Found {} containers", containers.len()); // Debug-Ausgabe
+    let containers = docker.list_containers(Some(options)).await?;
 
-    let mut stats_vec = Vec::new();
+    println!("Found {} containers", containers.len());
+
+    let mut status_list = Vec::new();
 
     for container in containers {
-        if let Some(container_id) = container.id {
-            println!("\nFetching stats for container: {}", container_id); // Debug-Ausgabe
+        println!("Inspecting container ID: {:?}", container.id);
 
-            let inspect = container_inspect(&container_id).await?;
-            let stats = container_stats(&container_id).await?;
+        let details = docker
+            .inspect_container(container.id.as_deref().unwrap_or(""), None::<InspectContainerOptions>)
+            .await?;
 
-            let name = inspect.name.unwrap_or_else(|| "N/A".to_string());
-            let state = inspect.state.unwrap_or_default();
-            let status = state.status.map_or("unknown".to_string(), |s| s.to_string());
-            let network_settings = inspect.network_settings.unwrap_or_default();
-            let ip_address = network_settings.networks.map_or("N/A".to_string(), |n| {
-                n.iter().next().map_or("N/A".to_string(), |(_, v)| v.ip_address.clone().unwrap_or_else(|| "N/A".to_string()))
-            });
+        let mut stats_stream = docker
+            .stats(container.id.as_deref().unwrap_or(""), Some(StatsOptions { stream: false, one_shot: true }))
+            .take(1);
 
-            let cpu_usage = stats.cpu_stats.cpu_usage.total_usage as f64 / stats.cpu_stats.system_cpu_usage.unwrap_or(1) as f64 * 100.0;
-            let memory_usage = stats.memory_stats.usage.unwrap_or(0) as f64 / stats.memory_stats.limit.unwrap_or(1) as f64 * 100.0;
+        let stats = stats_stream.next().await.unwrap()?;
 
-            let rx_bytes = stats.networks.as_ref().map_or(0, |networks| {
-                networks.values().map(|v| v.rx_bytes).sum::<u64>()
-            });
-            let tx_bytes = stats.networks.as_ref().map_or(0, |networks| {
-                networks.values().map(|v| v.tx_bytes).sum::<u64>()
-            });
+        let cpu_usage = calculate_cpu_usage(&stats);
+        let memory_usage = calculate_memory_usage(&stats);
 
-            let service_id = if let Some(labels) = inspect.config.and_then(|config| config.labels) {
-                labels.get("com.docker.swarm.service.id").cloned()
-            } else {
-                None
-            };
+        let uptime = details
+            .state
+            .as_ref()
+            .and_then(|state| state.started_at.as_ref())
+            .map(|start| format_duration(Utc::now().signed_duration_since(DateTime::parse_from_rfc3339(start).unwrap())))
+            .unwrap_or_default();
 
-            let published_ports = if let Some(ref service_id) = service_id {
-                let service_details = service_inspect(service_id).await?;
-                Some(extract_published_ports(&service_details))
-            } else {
-                None
-            };
+        let ports = details
+            .network_settings
+            .map(|ns| {
+                ns.ports.map(|ps| {
+                    ps.iter()
+                        .map(|(k, v)| {
+                            (
+                                k.clone(),
+                                v.clone().unwrap_or(vec![])
+                                    .iter()
+                                    .map(|pb| format!("{}:{}", pb.host_ip.clone().unwrap_or_default(), pb.host_port.clone().unwrap_or_default()))
+                                    .collect(),
+                            )
+                        })
+                        .collect()
+                })
+                    .unwrap_or_default()
+            })
+            .unwrap_or_default();
 
-            let container_stat = ContainerStats {
-                container_id,
-                name,
-                status,
-                ip_address,
-                cpu_usage,
-                memory_usage,
-                rx_bytes,
-                tx_bytes,
-                service_id,
-                published_ports,
-            };
+        let state = details
+            .state
+            .as_ref()
+            .and_then(|state| state.status.as_ref())
+            .map(|status| status.to_string())
+            .unwrap_or_default();
 
-            stats_vec.push(container_stat);
-        } else {
-            println!("Container ID not found"); // Debug-Ausgabe
-        }
+        status_list.push(ContainerStatus {
+            id: details.id.unwrap_or_default(),
+            name: details.name.unwrap_or_default(),
+            image: details.config.and_then(|config| config.image).unwrap_or_default(),
+            state,
+            ports,
+            cpu_usage,
+            memory_usage,
+            uptime,
+        });
     }
 
-    Ok(stats_vec)
+    Ok(status_list)
+}
+
+fn calculate_cpu_usage(stats: &bollard::container::Stats) -> f64 {
+    let cpu_delta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
+    let system_delta = stats.cpu_stats.system_cpu_usage.unwrap_or(0) - stats.precpu_stats.system_cpu_usage.unwrap_or(0);
+    if system_delta > 0 && cpu_delta > 0 {
+        (cpu_delta as f64 / system_delta as f64) * stats.cpu_stats.online_cpus.unwrap_or(1) as f64 * 100.0
+    } else {
+        0.0
+    }
+}
+
+fn calculate_memory_usage(stats: &bollard::container::Stats) -> f64 {
+    if let Some(usage) = stats.memory_stats.usage {
+        if let Some(limit) = stats.memory_stats.limit {
+            return (usage as f64 / limit as f64) * 100.0;
+        }
+    }
+    0.0
+}
+
+fn format_duration(duration: chrono::Duration) -> String {
+    let seconds = duration.num_seconds();
+    let hours = seconds / 3600;
+    let minutes = (seconds % 3600) / 60;
+    let seconds = seconds % 60;
+    format!("{}h {}m {}s", hours, minutes, seconds)
 }
