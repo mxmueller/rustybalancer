@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::Mutex;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct QueueItem {
      name: String,
 }
@@ -42,6 +42,11 @@ pub async fn enqueue(queue: SharedQueue, item: QueueItem) {
 pub async fn dequeue(queue: SharedQueue) -> Option<QueueItem> {
      let mut queue = queue.lock().await;
      queue.pop_front()
+}
+
+pub async fn read_queue(queue: SharedQueue) -> Vec<QueueItem> {
+     let queue = queue.lock().await;
+     queue.iter().cloned().collect()
 }
 
 pub async fn display(queue: SharedQueue) {
