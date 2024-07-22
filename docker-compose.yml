@@ -6,38 +6,44 @@ services:
       context: ./deployment-agent
       dockerfile: Dockerfile
     ports:
-      - "${HOST_PORT_DEPLOYMENT_AGENT}:2547"
+      - "${HOST_PORT_WS_DEPLOYMENT_AGENT}:${HOST_PORT_WS_DEPLOYMENT_AGENT}"
+      - "${HOST_PORT_HTTP_DEPLOYMENT_AGENT}:${HOST_PORT_HTTP_DEPLOYMENT_AGENT}"
     networks:
       - rust-network
     volumes:
       - "${DOCKER_SOCKET_VOLUME}:${DOCKER_SOCKET_VOLUME}"
     environment:
       - DOCKER_HOST=${DOCKER_HOST}
+      - DOCKER_IMAGE=${DOCKER_IMAGE}
+      - TARGET_PORT=${TARGET_PORT}
+      - DEFAULT_CONTAINER=${DEFAULT_CONTAINER}
+      - APP_IDENTIFIER=${APP_IDENTIFIER}
+      - HOST_PORT_HTTP_DEPLOYMENT_AGENT=${HOST_PORT_HTTP_DEPLOYMENT_AGENT}
 
-  balancer:
+#  balancer:
+#    build:
+#      context: ./balancer
+#      dockerfile: Dockerfile
+#    ports:
+#     - "${HOST_PORT_BALANCER}:2548"
+#    networks:
+#      - rust-network
+#    depends_on:
+#      - deployment-agent
+
+  dashboard:
     build:
-      context: ./balancer
+      context: ./dashboard
       dockerfile: Dockerfile
     ports:
-      - "${HOST_PORT_BALANCER}:2548"
-    networks:
-      - rust-network
+      - "${PORT_DASHBOARD}:${PORT_DASHBOARD}"
+    environment:
+      - DEPLOYMENT_URL=http://deployment-agent:${HOST_PORT_HTTP_DEPLOYMENT_AGENT}/stats
+      - PORT_DASHBOARD=${PORT_DASHBOARD}
     depends_on:
       - deployment-agent
-
-#  grafana:
-#    image: grafana/grafana:latest
-#    container_name: grafana
-#    environment:
-#      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource
-#    ports:
-#      - "${PORT_GRAFANA}:3000"
-#    volumes:
-#      - grafana-data:/var/lib/grafana
-#      - ./provisioning:/etc/grafana/provisioning
-
-#volumes:
-#  grafana-data:
+    networks:
+      - rust-network
 
 networks:
   rust-network:

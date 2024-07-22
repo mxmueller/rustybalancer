@@ -16,7 +16,7 @@ pub struct ContainerStatus {
     pub state: String,
     pub ports: HashMap<String, Vec<String>>,
     pub cpu_usage: f64,
-    pub memory_usage: f64, // Hier bleibt es f64
+    pub memory_usage: f64,
     pub uptime: String,
 }
 

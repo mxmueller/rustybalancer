@@ -1,3 +1,4 @@
+use std::env;
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -15,6 +16,15 @@ pub async fn socket(queue: SharedQueue) -> (mpsc::Sender<String>, mpsc::Receiver
 
     // Router with get (for HTTP GET).
     // http_to_ws without round-brackets, because it's referring to the pointer of the function.
+    let app = Router::new().route("/ws", get(http_to_ws));
+
+    dotenv().ok();
+    let ws_env_port = env::var("HOST_PORT_WS_DEPLOYMENT_AGENT")
+        .expect("HOST_PORT_WS_DEPLOYMENT_AGENT must be set")
+        .parse::<u16>()
+        .expect("HOST_PORT_WS_DEPLOYMENT_AGENT must be a valid u16");
+
+    let addr_ws = SocketAddr::from(([0, 0, 0, 0], ws_env_port));
     let app = Router::new().route("/ws", get(move |ws: WebSocketUpgrade| http_to_ws(ws, queue.clone())));
     let addr = SocketAddr::from(([0, 0, 0, 0], 2548));
 
