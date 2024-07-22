@@ -29,14 +29,8 @@ RUN apt-get update && apt-get install -y libssl-dev
 
 WORKDIR /app
 
-# Copy static files if you have any (optional)
-# COPY public public
-
 # Copy the server binary from the build stage
 COPY --from=builder /code/target/release/deployment-agent deployment-agent
-
-# Set user to non-root unless root is required for your app
-USER 1001
 
 # Run the server
 CMD ["/app/deployment-agent"]

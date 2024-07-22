@@ -36,16 +36,16 @@ async fn stress_test(url: &str, concurrency: usize, duration: Duration) {
 
 #[tokio::test]
 async fn test_cpu_stress() {
-    let cpu_url = "http://localhost:16690/cpu?duration=10";
-    let concurrency = 300; // Anzahl der gleichzeitigen Anfragen
-    let test_duration = Duration::from_secs(150); // Dauer des Stresstests
+    let cpu_url = "http://localhost:37259/cpu?duration=10";
+    let concurrency = 3000; // Anzahl der gleichzeitigen Anfragen
+    let test_duration = Duration::from_secs(20); // Dauer des Stresstests
 
     stress_test(cpu_url, concurrency, test_duration).await;
 }
 
 #[tokio::test]
 async fn test_memory_stress() {
-    let memory_url = "http://localhost:16690/memory?size=2";
+    let memory_url = "http://localhost:37259/memory?size=2";
     let concurrency = 80; // Anzahl der gleichzeitigen Anfragen
     let test_duration = Duration::from_secs(30); // Dauer des Stresstests
 

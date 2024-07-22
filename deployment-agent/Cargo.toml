@@ -7,6 +7,7 @@ edition = "2021"
 axum = { version = "0.6", features = ["ws"] }
 tokio = { version = "1", features = ["full"] }
 tower = "0.4"
+tower-http = { version = "0.3", features = ["cors"] }
 hyper = { version = "0.14", features = ["full"] }
 tokio-tungstenite = "0.15"
 futures = "0.3.30"
