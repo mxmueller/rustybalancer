@@ -40,9 +40,6 @@ pub async fn connect_socket() -> (WebSocketSender, WebSocketReceiver) {
         }
     });
 
-    // Sending events:
-    //send_event(&mut write).await;
-
     // Task for sending messages.
     task::spawn(async move {
         while let Some(text) = rx.recv().await {
@@ -56,8 +53,3 @@ pub async fn connect_socket() -> (WebSocketSender, WebSocketReceiver) {
 
     (tx, msg_rx)
 }
-
-async fn send_event() {
-    // TODO! sending events
-}
-

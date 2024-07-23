@@ -1,10 +1,12 @@
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use crate::http::http;
+use crate::queue::read_queue;
 use crate::socket::{connect_socket};
 
 mod socket;
 mod http;
+mod queue;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
@@ -19,9 +21,20 @@ async fn main() {
         http(log_tx, shared_ws_tx, shared_ws_rx).await;
     });
 
+    // Task for processing incoming WebSocket messages
+    tokio::spawn({
+        let ws_rx = ws_rx.clone();
+        async move {
+            read_queue(ws_rx).await;
+        }
+    });
+
     tokio::spawn(async move {
         while let Some(log) = log_rx.recv().await {
             println!("Log: {}", log);
         }
     });
+
+
+
 }
