@@ -6,9 +6,32 @@ use dotenv::dotenv;
 use std::collections::HashMap;
 use std::env;
 use rand::Rng;
+use bollard::image::CreateImageOptions;
+use futures_util::stream::StreamExt;
+
+async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
+    let create_image_options = CreateImageOptions {
+        from_image: image_name,
+        ..Default::default()
+    };
+
+    let mut stream = docker.create_image(Some(create_image_options), None, None);
+
+    while let Some(pull_result) = stream.next().await {
+        match pull_result {
+            Ok(output) => println!("{:?}", output),
+            Err(e) => eprintln!("Error while pulling image: {:?}", e),
+        }
+    }
+
+    Ok(())
+}
 
 pub async fn create_container(container_name: &str, image_name: &str, target_port: u16, app_identifier: &str) -> Result<u16, Error> {
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
+
+    // Pull the image if it's not already available locally
+    pull_image(&docker, image_name).await?;
 
     let host_port: u16 = rand::thread_rng().gen_range(30000..40000);
 
@@ -95,7 +118,7 @@ pub async fn start_containers() -> Result<(), Error> {
         return Ok(());
     }
 
-    for i in existing_container_count+1..=default_container {
+    for i in existing_container_count + 1..=default_container {
         let container_name = format!("worker-{}", i);
         match create_container(&container_name, &image_name, target_port, &app_identifier).await {
             Ok(host_port) => println!("Successfully created container '{}' on port {}", container_name, host_port),
