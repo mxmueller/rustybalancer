@@ -1,9 +1,6 @@
 use bollard::errors::Error;
 use dotenv::dotenv;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use stats::get_container_status;
-use http::{start_http_server, ContainerStatus, AppState};
+use http::{start_http_server};
 use crate::queue::build_queue;
 use crate::socket::socket;
 

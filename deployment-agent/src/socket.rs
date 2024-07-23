@@ -7,16 +7,13 @@ use axum::{
 };
 use std::net::SocketAddr;
 use std::time::Duration;
+use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use crate::queue::SharedQueue;
 
 pub async fn socket(queue: SharedQueue) -> (mpsc::Sender<String>, mpsc::Receiver<String>) {
     let (tx, rx) = mpsc::channel(32);
-
-    // Router with get (for HTTP GET).
-    // http_to_ws without round-brackets, because it's referring to the pointer of the function.
-    let app = Router::new().route("/ws", get(http_to_ws));
 
     dotenv().ok();
     let ws_env_port = env::var("HOST_PORT_WS_DEPLOYMENT_AGENT")
@@ -25,6 +22,8 @@ pub async fn socket(queue: SharedQueue) -> (mpsc::Sender<String>, mpsc::Receiver
         .expect("HOST_PORT_WS_DEPLOYMENT_AGENT must be a valid u16");
 
     let addr_ws = SocketAddr::from(([0, 0, 0, 0], ws_env_port));
+    // Router with get (for HTTP GET).
+    // http_to_ws without round-brackets, because it's referring to the pointer of the function.
     let app = Router::new().route("/ws", get(move |ws: WebSocketUpgrade| http_to_ws(ws, queue.clone())));
     let addr = SocketAddr::from(([0, 0, 0, 0], 2548));
 
