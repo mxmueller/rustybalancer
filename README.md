@@ -1,4 +1,6 @@
 
+<img src="./.resources/logo.jpg" alt="Logo" width="250"/>
+
 # RustyBalancer
 
 RustyBalancer is a load balancer and deployment engine prototype, featuring:
