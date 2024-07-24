@@ -26,7 +26,7 @@ pub async fn start_http_server() {
         .expect("HOST_PORT_HTTP_DEPLOYMENT_AGENT must be a valid u16");
 
     let addr = SocketAddr::from(([0, 0, 0, 0], http_env_port));
-    println!("Listening on {}", addr);
+    println!("HTTP Listening on {}", addr);
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

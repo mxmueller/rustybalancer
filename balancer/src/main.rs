@@ -1,40 +1,29 @@
-use std::sync::Arc;
-use tokio::sync::mpsc;
 use crate::http::http;
-use crate::queue::read_queue;
-use crate::socket::{connect_socket};
+use crate::socket::{connect_socket, SharedState};
+use std::sync::{Arc, Mutex};
 
 mod socket;
 mod http;
-mod queue;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
-    let (ws_tx, ws_rx) = connect_socket().await;
+    let shared_state = Arc::new(Mutex::new(String::new()));
 
-    let (log_tx, mut log_rx) = mpsc::channel(32);
-
-    let shared_ws_rx = Arc::clone(&ws_rx);
-    let shared_ws_tx = Arc::clone(&ws_tx);
-
+    let ws_state = shared_state.clone();
     tokio::spawn(async move {
-        http(log_tx, shared_ws_tx, shared_ws_rx).await;
-    });
-
-    // Task for processing incoming WebSocket messages
-    tokio::spawn({
-        let ws_rx = ws_rx.clone();
-        async move {
-            read_queue(ws_rx).await;
+        if let Err(e) = connect_socket(ws_state).await {
+            eprintln!("WebSocket connection error: {}", e);
         }
     });
 
+    let http_state = shared_state.clone();
     tokio::spawn(async move {
-        while let Some(log) = log_rx.recv().await {
-            println!("Log: {}", log);
+        if let Err(e) = http(http_state).await {
+            eprintln!("HTTP server error: {}", e);
         }
     });
 
-
-
+    loop { // refresh lifetime all 60 secs
+        tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+    }
 }

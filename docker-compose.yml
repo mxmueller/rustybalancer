@@ -18,18 +18,9 @@ services:
       - TARGET_PORT=${TARGET_PORT}
       - DEFAULT_CONTAINER=${DEFAULT_CONTAINER}
       - APP_IDENTIFIER=${APP_IDENTIFIER}
+      - HOST_PORT_WS_DEPLOYMENT_AGENT=${HOST_PORT_WS_DEPLOYMENT_AGENT}
       - HOST_PORT_HTTP_DEPLOYMENT_AGENT=${HOST_PORT_HTTP_DEPLOYMENT_AGENT}
-
-#  balancer:
-#    build:
-#      context: ./balancer
-#      dockerfile: Dockerfile
-#    ports:
-#     - "${HOST_PORT_BALANCER}:2548"
-#    networks:
-#      - rust-network
-#    depends_on:
-#      - deployment-agent
+    restart: unless-stopped
 
   dashboard:
     build:
@@ -44,6 +35,23 @@ services:
       - deployment-agent
     networks:
       - rust-network
+    restart: unless-stopped
+
+  balancer:
+    build:
+      context: ./balancer
+      dockerfile: Dockerfile
+    ports:
+      - "${HOST_PORT_HTTP_BALANCER}:${HOST_PORT_HTTP_BALANCER}"
+    networks:
+      - rust-network
+    depends_on:
+      - deployment-agent
+    environment:
+      - HOST_PORT_WS_BALANCER=${HOST_PORT_WS_BALANCER}
+      - HOST_PORT_HTTP_BALANCER=${HOST_PORT_HTTP_BALANCER}
+      - HOST_PORT_WS_DEPLOYMENT_AGENT=${HOST_PORT_WS_DEPLOYMENT_AGENT}
+    restart: unless-stopped
 
 networks:
   rust-network:
