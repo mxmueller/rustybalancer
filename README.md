@@ -1,14 +1,36 @@
+
 # RustyBalancer
 
+RustyBalancer is a load balancer and deployment engine prototype, featuring:
+- **Round Robin with Priorities** for distribution
+- **Proactive Handling**
+- **Load Balancer**
+- **Deployment Engine**
 
-Prototyping:
+## Installation Instructions
 
-- Round Robin mit Prioritäten für Verteilung
-- Proaktives Handling
-- Load Balancer
-- Depolyment Engine
+### Prerequisites
 
+- **Docker** installed
+- **Rust** installed
 
-ls -l /var/run/docker.sock
-srw-rw---- 1 root docker 0 Jul 21 12:34 /var/run/docker.sock
-sudo usermod -aG docker $USER
+### Steps
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/mxmueller/RustyBalancer.git
+   cd RustyBalancer
+   ```
+2. **Add current user to Docker group (if needed):**
+   ```bash
+   sudo usermod -aG docker $USER
+   ```
+
+3. **Build and run using Docker Compose:**
+   ```bash
+   docker-compose up --build
+   ```
+   
+4. **Access the dashboard:**
+   Open your web browser and go to `http://localhost:YOUR_PORT`.
+
