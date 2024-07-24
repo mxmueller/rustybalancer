@@ -1,5 +1,5 @@
 
-<img src="./.resources/logo.jpg" alt="Logo" width="250"/>
+<img src="./docs/resources/logo.jpg" alt="Logo" width="250"/>
 
 # RustyBalancer
 
