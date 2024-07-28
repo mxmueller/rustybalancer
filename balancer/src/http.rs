@@ -4,10 +4,12 @@ use axum::{
     response::{Html, IntoResponse},
     routing::get,
     Router,
+    Json,
 };
 use std::net::SocketAddr;
 use dotenv::dotenv;
 use crate::socket::SharedState;
+use serde_json::json;
 
 async fn landing_page() -> Html<&'static str> {
     let html = r#"
@@ -29,7 +31,15 @@ async fn landing_page() -> Html<&'static str> {
 
 async fn get_ws_content(Extension(shared_state): Extension<SharedState>) -> impl IntoResponse {
     let state = shared_state.lock().unwrap();
-    Html(format!("<p>Latest message from WebSocket: {}</p>", *state))
+
+    let queue_items = state.iter();
+    println!("What's in the queue: {:?}", queue_items);
+
+    if let Some(queue_items) = &*state {
+        Json(json!(queue_items))
+    } else {
+        Json(json!({"error": "No data available"}))
+    }
 }
 
 pub async fn http(shared_state: SharedState) -> Result<(), Box<dyn std::error::Error>> {

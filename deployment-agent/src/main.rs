@@ -3,7 +3,6 @@ use dotenv::dotenv;
 use http::start_http_server;
 use crate::queue::build_queue;
 use crate::socket::socket;
-use tokio::task::JoinError;
 
 mod container;
 mod stats;

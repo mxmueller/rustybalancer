@@ -11,6 +11,7 @@ use std::time::Duration;
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, Mutex};
+use tokio::time::timeout;
 use crate::queue::SharedQueue;
 
 pub async fn socket(queue: SharedQueue) -> (mpsc::Sender<String>, mpsc::Receiver<String>) {
@@ -49,7 +50,6 @@ pub enum Event {
 async fn handle_socket(socket: WebSocket, queue: SharedQueue) {
     println!("WebSocket connection established");
     let socket = Arc::new(Mutex::new(socket));
-    let mut interval = tokio::time::interval(Duration::from_secs(10));
 
     // Task for sending the entire queue at regular intervals
     let queue_sender = queue.clone();
@@ -59,22 +59,31 @@ async fn handle_socket(socket: WebSocket, queue: SharedQueue) {
             // Lock the queue and serialize it
             let queue_data = {
                 let queue = queue_sender.lock().await;
-                serde_json::to_string(&*queue).expect("Failed to serialize queue")
+                let queue_string = serde_json::to_string(&*queue).expect("Failed to serialize queue");
+                println!("QUEUE: {}", queue_string);
+                queue_string
             };
-
+            println!("{}", queue_data);
             // Send the serialized queue as a single message
-            let mut socket_lock = socket_sender.lock().await;
-            if let Err(e) = socket_lock.send(Message::Text(queue_data.clone())).await {
-                eprintln!("Error sending message: {}", e);
-                // Break the loop if an error occurs to avoid further broken pipe errors
-                break;
+            // Try to lock the socket with a timeout
+            match timeout(Duration::from_secs(5), socket_sender.lock()).await {
+                Ok(mut socket_lock) => {
+                    if let Err(e) = socket_lock.send(Message::Text(queue_data.clone())).await {
+                        eprintln!("Error sending message: {}", e);
+                        // Break the loop if an error occurs to avoid further broken pipe errors
+                        break;
+                    }
+                    println!("Successfully sent queue with websocket: {}.", queue_data);
+                }
+                Err(_) => {
+                    eprintln!("Timeout while trying to lock the socket");
+                }
             }
-
             // Wait before sending the queue again
-            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
     });
-
+    /*
     // Task for receiving messages from the WebSocket
     let socket_receiver = Arc::clone(&socket);
     tokio::spawn(async move {
@@ -92,4 +101,6 @@ async fn handle_socket(socket: WebSocket, queue: SharedQueue) {
             }
         }
     });
+
+     */
 }

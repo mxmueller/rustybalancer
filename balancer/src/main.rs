@@ -1,13 +1,14 @@
 use crate::http::http;
-use crate::socket::{connect_socket, SharedState};
+use crate::socket::{connect_socket};
 use std::sync::{Arc, Mutex};
 
 mod socket;
 mod http;
+mod queue;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() {
-    let shared_state = Arc::new(Mutex::new(String::new()));
+    let shared_state = Arc::new(Mutex::new(None));
 
     let ws_state = shared_state.clone();
     tokio::spawn(async move {

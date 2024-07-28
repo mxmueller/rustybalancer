@@ -8,7 +8,7 @@ axum = { version = "0.6", features = ["ws"] }
 tokio = { version = "1", features = ["full"] }
 tower = "0.4"
 hyper = { version = "0.14", features = ["full"] }
-tokio-tungstenite = "0.15"
+tokio-tungstenite = "0.23.1"
 futures = "0.3.30"
 futures-util = "0.3.30"
 url = "2.5.2"
