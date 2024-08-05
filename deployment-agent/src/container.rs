@@ -14,16 +14,13 @@ async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
         from_image: image_name,
         ..Default::default()
     };
-
     let mut stream = docker.create_image(Some(create_image_options), None, None);
-
     while let Some(pull_result) = stream.next().await {
         match pull_result {
             Ok(output) => println!("{:?}", output),
             Err(e) => eprintln!("Error while pulling image: {:?}", e),
         }
     }
-
     Ok(())
 }
 

@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+
+  redis-insight:
+    image: redis/redisinsight:latest
+    restart: always
+    ports:
+      - "5540:5540"
+    volumes:
+      - ./databases.json:/db/databases.json
+
   deployment-agent:
     build:
       context: ./deployment-agent
@@ -20,6 +34,7 @@ services:
       - APP_IDENTIFIER=${APP_IDENTIFIER}
       - HOST_PORT_WS_DEPLOYMENT_AGENT=${HOST_PORT_WS_DEPLOYMENT_AGENT}
       - HOST_PORT_HTTP_DEPLOYMENT_AGENT=${HOST_PORT_HTTP_DEPLOYMENT_AGENT}
+      - HOST_IP_HOST_INTERNAL=host.docker.internal
     restart: unless-stopped
 
   dashboard:
@@ -31,6 +46,7 @@ services:
     environment:
       - DEPLOYMENT_URL=http://deployment-agent:${HOST_PORT_HTTP_DEPLOYMENT_AGENT}/stats
       - PORT_DASHBOARD=${PORT_DASHBOARD}
+      - HOST_IP_HOST_INTERNAL=host.docker.internal
     depends_on:
       - deployment-agent
     networks:
@@ -51,6 +67,9 @@ services:
       - HOST_PORT_WS_BALANCER=${HOST_PORT_WS_BALANCER}
       - HOST_PORT_HTTP_BALANCER=${HOST_PORT_HTTP_BALANCER}
       - HOST_PORT_WS_DEPLOYMENT_AGENT=${HOST_PORT_WS_DEPLOYMENT_AGENT}
+      - HOST_IP_HOST_INTERNAL=host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
 networks:

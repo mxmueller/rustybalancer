@@ -35,8 +35,5 @@ WORKDIR /app
 # Copy the server binary from the build stage
 COPY --from=builder /code/target/release/balancer balancer
 
-# Set user to non-root unless root is required for your app
-USER 1001
-
 # Run the server
 CMD ["/app/balancer"]

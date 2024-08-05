@@ -1,37 +1,45 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
+use axum::Json;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tokio::sync::Mutex;
+use crate::stats::{get_container_status, ContainerStatus};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct QueueItem {
      name: String,
+     external_port: String,
 }
 
 pub type SharedQueue = Arc<Mutex<VecDeque<QueueItem>>>;
 
-pub async fn build_queue() -> SharedQueue {
+pub async fn build_queue() -> Result<SharedQueue, axum::http::StatusCode> {
      let queue = VecDeque::new();
      let shared_queue = Arc::new(Mutex::new(queue));
 
-     // Hard-coded JSON elements
-     let json_elements = vec![
-          json!({"name": "item1"}),
-          json!({"name": "item2"}),
-          json!({"name": "item3"}),
-     ];
-
-     // Locking the shared queue and adding elements to it
-     {
-          let mut queue = shared_queue.lock().await;
-          for element in json_elements {
-               let item: QueueItem = serde_json::from_value(element).expect("Failed to deserialize JSON");
-               queue.push_back(item);
+     // Fetching container status
+     match get_container_status().await {
+          Ok(stats) => {
+               let mut queue = shared_queue.lock().await;
+               for container in stats {
+                    if let Some(ports) = container.ports.get("80/tcp") {
+                         if let Some(external_port) = ports.get(0) {
+                              // Extract only the port part after the colon
+                              if let Some(port) = external_port.split(':').last() {
+                                   let item = QueueItem {
+                                        name: container.name.clone(),
+                                        external_port: port.to_string(),
+                                   };
+                                   queue.push_back(item);
+                              }
+                         }
+                    }
+               }
           }
+          Err(_) => return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR),
      }
 
-     shared_queue
+     Ok(shared_queue)
 }
 
 pub async fn enqueue(queue: SharedQueue, item: QueueItem) {

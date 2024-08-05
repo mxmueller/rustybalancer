@@ -60,7 +60,7 @@ async fn handle_socket(socket: WebSocket, queue: SharedQueue) {
             let queue_data = {
                 let queue = queue_sender.lock().await;
                 let queue_string = serde_json::to_string(&*queue).expect("Failed to serialize queue");
-                println!("QUEUE: {}", queue_string);
+                // println!("QUEUE: {}", queue_string);
                 queue_string
             };
             println!("{}", queue_data);
@@ -73,7 +73,7 @@ async fn handle_socket(socket: WebSocket, queue: SharedQueue) {
                         // Break the loop if an error occurs to avoid further broken pipe errors
                         break;
                     }
-                    println!("Successfully sent queue with websocket: {}.", queue_data);
+                    // println!("Successfully sent queue with websocket: {}.", queue_data);
                 }
                 Err(_) => {
                     eprintln!("Timeout while trying to lock the socket");

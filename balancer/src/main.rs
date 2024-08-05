@@ -1,6 +1,7 @@
-use crate::http::http;
-use crate::socket::{connect_socket};
-use std::sync::{Arc, Mutex};
+use crate::http::start_http_server;
+use crate::socket::connect_socket;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 mod socket;
 mod http;
@@ -19,12 +20,12 @@ async fn main() {
 
     let http_state = shared_state.clone();
     tokio::spawn(async move {
-        if let Err(e) = http(http_state).await {
+        if let Err(e) = start_http_server(http_state).await {
             eprintln!("HTTP server error: {}", e);
         }
     });
 
-    loop { // refresh lifetime all 60 secs
+    loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
     }
 }

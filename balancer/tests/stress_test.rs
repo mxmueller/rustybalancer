@@ -16,38 +16,34 @@ async fn stress_test(url: &str, concurrency: usize, duration: Duration) {
     let semaphore = Arc::new(Semaphore::new(concurrency));
     let start = tokio::time::Instant::now();
 
-    loop {
-        if start.elapsed() >= duration {
-            break;
-        }
+    let mut handles = vec![];
 
+    while start.elapsed() < duration {
         let permit = semaphore.clone().acquire_owned().await.unwrap();
         let client_clone = client.clone();
         let url = url.to_string();
 
-        task::spawn(async move {
+        let handle = task::spawn(async move {
             make_request(&client_clone, &url).await;
             drop(permit);
         });
 
-        sleep(Duration::from_millis(10)).await;
+        handles.push(handle);
+
+        // Ein kleiner Schlaf, um die CPU-Nutzung zu reduzieren und realistische Bedingungen zu simulieren
+        sleep(Duration::from_millis(1)).await;
+    }
+
+    for handle in handles {
+        let _ = handle.await;
     }
 }
 
 #[tokio::test]
-async fn test_cpu_stress() {
-    let cpu_url = "http://localhost:37259/cpu?duration=10";
-    let concurrency = 3000; // Anzahl der gleichzeitigen Anfragen
-    let test_duration = Duration::from_secs(20); // Dauer des Stresstests
+async fn test_stress() {
+    let url = "http://localhost:2548/";
+    let concurrency = 10000; // Anzahl der gleichzeitigen Anfragen
+    let test_duration = Duration::from_secs(60); // Dauer des Stresstests
 
-    stress_test(cpu_url, concurrency, test_duration).await;
-}
-
-#[tokio::test]
-async fn test_memory_stress() {
-    let memory_url = "http://localhost:37259/memory?size=2";
-    let concurrency = 80; // Anzahl der gleichzeitigen Anfragen
-    let test_duration = Duration::from_secs(30); // Dauer des Stresstests
-
-    stress_test(memory_url, concurrency, test_duration).await;
+    stress_test(url, concurrency, test_duration).await;
 }

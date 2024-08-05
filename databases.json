@@ -1,0 +1,9 @@
+[
+  {
+    "name": "deployment-agent-redis",
+    "host": "redis",
+    "port": 6379,
+    "password": "",
+    "tls": false
+  }
+]

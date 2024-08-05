@@ -1,9 +1,10 @@
 use std::env;
 use futures_util::StreamExt;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use dotenv::dotenv;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use tokio::time::{sleep, Duration};
+use tokio::sync::Mutex;
 
 use crate::queue::{read_queue, QueueItem};
 
@@ -26,15 +27,14 @@ pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std
 
                 let shared_state_clone = Arc::clone(&shared_state);
 
-                // Hauptschleife, um Nachrichten zu empfangen und die Verbindung offenzuhalten
                 while let Some(msg) = ws_stream.next().await {
-                    println!("Received a message: {:?}", msg);
+                    // println!("Received a message: {:?}", msg);
                     match msg {
                         Ok(Message::Text(text)) => {
                             match read_queue(&text) {
                                 Ok(queue_items) => {
-                                    println!("Queue items: {:?}", queue_items.iter());
-                                    let mut state = shared_state_clone.lock().unwrap();
+                                    // println!("Queue items: {:?}", queue_items.iter());
+                                    let mut state = shared_state_clone.lock().await;
                                     *state = Some(queue_items);
                                 }
                                 Err(e) => {

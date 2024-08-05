@@ -3,6 +3,7 @@ use dotenv::dotenv;
 use http::start_http_server;
 use crate::queue::build_queue;
 use crate::socket::socket;
+use axum::http::StatusCode;
 
 mod container;
 mod stats;
@@ -20,7 +21,13 @@ async fn main() -> Result<(), Error> {
     });
 
     println!("Building queue...");
-    let queue = build_queue().await;
+    let queue = match build_queue().await {
+        Ok(q) => q,
+        Err(e) => {
+            eprintln!("Failed to build queue: {:?}", e);
+            return Err(Error::from(std::io::Error::new(std::io::ErrorKind::Other, "Failed to build queue")));
+        }
+    };
     println!("Queue built.");
 
     println!("Starting socket...");

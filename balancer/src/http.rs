@@ -1,66 +1,54 @@
 use std::env;
-use axum::{
-    extract::Extension,
-    response::{Html, IntoResponse},
-    routing::get,
-    Router,
-    Json,
-};
-use std::net::SocketAddr;
-use dotenv::dotenv;
+use std::sync::Arc;
+use hyper::service::{make_service_fn, service_fn};
+use hyper::{Body, Client, Request, Response, Server, Uri};
 use crate::socket::SharedState;
-use serde_json::json;
+use tokio::sync::Mutex;
 
-async fn landing_page() -> Html<&'static str> {
-    let html = r#"
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Landing Page</title>
-    </head>
-    <body>
-        <h1>Hello, this is the landing page!</h1>
-    </body>
-    </html>
-    "#;
-
-    Html(html)
-}
-
-async fn get_ws_content(Extension(shared_state): Extension<SharedState>) -> impl IntoResponse {
-    let state = shared_state.lock().unwrap();
-
-    let queue_items = state.iter();
-    println!("What's in the queue: {:?}", queue_items);
-
+async fn handle_request(req: Request<Body>, shared_state: SharedState) -> Result<Response<Body>, hyper::Error> {
+    let state = shared_state.lock().await;
     if let Some(queue_items) = &*state {
-        Json(json!(queue_items))
-    } else {
-        Json(json!({"error": "No data available"}))
+        // Simple round-robin load balancing
+        let backend_index = (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as usize) % queue_items.len();
+        let backend = &queue_items[backend_index];
+        let host_internal = env::var("HOST_IP_HOST_INTERNAL").expect("HOST_IP_HOST_INTERNAL must be set");
+
+        let uri_string = format!("http://{}:{}{}", host_internal, backend.external_port, req.uri().path());
+        let uri: Uri = uri_string.parse().unwrap();
+
+        let (mut parts, body) = req.into_parts();
+        parts.uri = uri;
+        let new_req = Request::from_parts(parts, body);
+
+        println!("Forwarding request to worker: {}", backend.name);  // Print the worker handling the request
+
+        let client = Client::new();
+        return client.request(new_req).await;
     }
+
+    Ok(Response::builder()
+        .status(500)
+        .body(Body::from("No backend available"))
+        .unwrap())
 }
 
-pub async fn http(shared_state: SharedState) -> Result<(), Box<dyn std::error::Error>> {
-    // Creates Router.
-    let app = Router::new()
-        .route("/", get(landing_page))
-        .route("/ws_content", get(get_ws_content))
-        .layer(Extension(shared_state));
+pub async fn start_http_server(shared_state: SharedState) -> Result<(), Box<dyn std::error::Error>> {
+    let addr = ([0, 0, 0, 0], env::var("HOST_PORT_HTTP_BALANCER").unwrap().parse().unwrap()).into();
 
-    dotenv().ok();
-    let http_env_port = env::var("HOST_PORT_HTTP_BALANCER")
-        .expect("HOST_PORT_HTTP_BALANCER must be set")
-        .parse::<u16>()
-        .expect("HOST_PORT_HTTP_BALANCER must be a valid u16");
+    let make_svc = make_service_fn(move |_| {
+        let shared_state = shared_state.clone();
+        async move {
+            Ok::<_, hyper::Error>(service_fn(move |req| {
+                handle_request(req, shared_state.clone())
+            }))
+        }
+    });
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], http_env_port));
-    println!("Listening on {}", addr);
+    let server = Server::bind(&addr).serve(make_svc);
 
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await?;
+    println!("Listening on http://{}", addr);
+
+    server.await?;
 
     Ok(())
 }

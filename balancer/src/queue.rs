@@ -3,7 +3,8 @@ use serde_json::from_str;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct QueueItem {
-    name: String,
+    pub name: String,
+    pub external_port: String,
 }
 
 pub fn read_queue(text: &str) -> Result<Vec<QueueItem>, String> {
