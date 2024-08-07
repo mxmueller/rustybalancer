@@ -1,9 +1,9 @@
 [
   {
-    "name": "deployment-agent-redis",
+    "name": "Local Redis",
     "host": "redis",
     "port": 6379,
-    "password": "",
-    "tls": false
+    "username": "",
+    "password": ""
   }
 ]

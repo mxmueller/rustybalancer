@@ -7,6 +7,14 @@ services:
     ports:
       - "6379:6379"
 
+  redis-insight:
+    image: redis/redisinsight:latest
+    restart: always
+    ports:
+      - "5540:5540"
+    networks:
+      - rust-network
+
   deployment-agent:
     build:
       context: ./deployment-agent

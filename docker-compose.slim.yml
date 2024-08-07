@@ -29,22 +29,6 @@ services:
       - HOST_IP_HOST_INTERNAL=host.docker.internal
     restart: unless-stopped
 
-  dashboard:
-    build:
-      context: ./dashboard
-      dockerfile: Dockerfile
-    ports:
-      - "${PORT_DASHBOARD}:${PORT_DASHBOARD}"
-    environment:
-      - DEPLOYMENT_URL=http://deployment-agent:${HOST_PORT_HTTP_DEPLOYMENT_AGENT}/stats
-      - PORT_DASHBOARD=${PORT_DASHBOARD}
-      - HOST_IP_HOST_INTERNAL=host.docker.internal
-    depends_on:
-      - deployment-agent
-    networks:
-      - rust-network
-    restart: unless-stopped
-
   balancer:
     build:
       context: ./balancer
