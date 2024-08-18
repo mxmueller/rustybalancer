@@ -1,0 +1,172 @@
+\documentclass[twocolumn]{el-author}
+
+%\usepackage[...]{...}      This has been commented out as we are not using any additional packages here.  On the whole, they should be unnecessary.
+\newcommand{\hH}{\hat{H}}
+\newcommand{\D}{^\dagger}
+\newcommand{\ua}{\uparrow}
+\newcommand{\nc}{\newcommand}
+\nc{\da}{\downarrow} \nc{\hc}{\hat{c}} \nc{\hS}{\hat{S}}
+\nc{\bra}{\langle} \nc{\ket}{\rangle} \nc{\eq}{equation (\ref}
+\nc{\h}{\hat} \nc{\hT}{\h{T}}\nc{\be}{\begin{eqnarray}}
+\nc{\ee}{\end{eqnarray}}\nc{\rd}{\textrm{d}}\nc{\e}{eqnarray}\nc{\hR}{\hat{R}}\nc{\Tr}{\mathrm{Tr}}
+\nc{\tS}{\tilde{S}}\nc{\tr}{\mathrm{tr}}\nc{\8}{\infty}\nc{\lgs}{\bra\ua,\phi|}\nc{\rgs}{|\ua,\phi\ket}
+\nc{\hU}{\hat{U}}\nc{\lfs}{\bra\phi|}\nc{\rfs}{|\phi\ket}\nc{\hZ}{\hat{Z}}\nc{\hd}{\hat{d}}\nc{\mD}{\mathcal{D}}
+\nc{\bd}{\bar{d}}\nc{\bc}{\bar{c}}\nc{\mc}{\mathcal}\nc{\ea}{eqnarray}\nc{\mG}{\mathcal{G}}\nc{\bce}{\begin{center}}
+\nc{\ece}{\end{center}}
+\date{12. September 2024}
+
+\begin{document}
+
+\title{Verteilte Systeme - Gruppe X - RustyBalancer}}
+
+\author{Maximilian Müller und Vivian Berger}
+
+\abstract{}
+
+\maketitle
+\section{RustyBalancer}
+
+\section{Introduction}
+
+RustyBalancer is a prototype for a load balancer and deployment agent developed in Rust.
+It is supposed to manage and optimize the distribution of incoming network traffic across multiple backend-servers.
+This documentation provides a theoretical overview of RustyBalancer's architecture and its features.
+
+\section{System Architecture}
+RustyBalancer's architecture is designed to handle both load balancing and deployment processes efficiently.
+The project is implemented in Rust, a systems programming language known for its performance, safety, and concurrency features.
+These characteristics make sure that the distributed system can handle high loads and provides a reliable and secure environment.
+The system consists of the following main components:
+
+\subsection{Load Balancer}
+The load balancer is responsible for distributing incoming requests across multiple backend servers to ensure availability and the equal distribution of resources.
+(nimmt anfragen an und leitet die weiter an deployment agent)
+Key characteristics include:
+
+\begin{itemize}
+    \item \textbf{Request Distribution:} The load balancer uses algorithms to determine how incoming requests are allocated to backend servers.
+    \item \textbf{Fault Tolerance:} It can detect server failures and redirect traffic to healthy servers.
+    \item \textbf{Scalability:} The load balancer can scale horizontally by adding more backend servers as needed.
+\end{itemize}
+
+\subsection{Deployment Agent}
+The deployment agent manages the deployment and scaling of applications.
+(rechnet roundrobin aus und teilt die ergebnisse loadbalancer mit)
+
+\subsection{Load Balancing Algorithms}
+RustyBalancer incorporates a load balancing algorithm to distribute incoming traffic effectively.
+The algorithm used is Round Robin with Priorities.
+
+\subsection{Round Robin with Priorities}
+The Round Robin algorithm is a widely-used load balancing technique that distributes requests in a cyclic order.
+This approach ensures that each server receives an equal number of requests over time.
+The enhanced version, Round Robin with Priorities, introduces an additional layer to prioritize servers based on their importance or capacity:
+
+\begin{itemize}
+    \item \textbf{Basic Round Robin:} Requests are distributed sequentially across a list of servers. After reaching the end of the list, the algorithm starts again from the beginning.
+    \item \textbf{Priorities:} Requests are first distributed based on assigned priorities, ensuring that higher-priority requests receive more resources compared to lower-priority ones. This adjustment helps to balance the load more effectively according to the criticality of the services.
+\end{itemize}
+
+The combination of Round Robin and Priorities allows RustyBalancer to handle workloads more efficiently and ensure that critical services are prioritized while keeping the traffic balanced.
+
+\subsection{Proactive Handling}
+whats this do?
+
+\subsection{Docker}
+The application uses Docker and Docker Compose.
+Therefore it can be containerized and run in isolated environments, making the deployment process more manageable and scalable.
+By using the isolation provided by containers, dependencies and configurations can be minimized.
+
+Key functions include:
+
+\begin{itemize}
+\item \textbf{Environment Configuration:} It supports multiple environments, such as production, development, and slim, allowing for different configurations and optimizations.
+\item \textbf{Automated Deployment:} The engine automates the deployment process, reducing manual intervention and minimizing errors.
+\end{itemize}
+
+\subsection{Customization and Extensibility}
+RustyBalancer is designed with customization in mind.
+
+Users can adapt the system to their specific needs by:
+
+\begin{itemize}
+    \item \textbf{Customizing Deployment Configurations:} Users can create or modify deployment configurations to better fit their environment and application needs.
+    \item \textbf{Extending Functionality:} The system is built to allow the integration of additional features and services, enhancing its capabilities as needed.
+\end{itemize}
+
+\section{Implementation Details}
+
+\subsection{Communication across components}
+The load balancer and deployment agent communicate with each other with websocket connection.
+This allows for real-time updates and efficient data exchange between the components.
+The deployment agent sends the load balancer information about the current state of the backend servers, as well as compute their priorities and the round robin distribution.
+It is sent in a queue?
+The load balancers receives http-requests and forwards them to the deployment agent based on the queue received from the websocket connection.
+
+\subsection{Encountered Problems and Solutions}
+Handling the communication between the load balancer and deployment agent was a challenging task as it required real-time updates and efficient data exchange.
+Requiring an asynchronous communication model.
+After deciding to use websockets to establish a connection between the components, there were still struggles of keeping the channels organised and uni-directional as to avoid blockages.
+
+
+\section{Conclusion}
+
+RustyBalancer represents a robust solution for managing load distribution and application deployment.
+By combining sophisticated load balancing algorithms, proactive handling techniques, and flexible configuration options, RustyBalancer aims to provide a high-performance, reliable, and adaptable system for application environments.
+
+
+%\vfill\pagebreak
+
+\section{Conclusion}
+\vskip3pt
+
+\noindent J. Smith and A. N. Other (\textit{The IET, Stevenage, UK})
+\vskip3pt
+
+\noindent E-mail: jsmith@theiet.org
+
+\begin{thebibliography}{}
+
+\bibitem{1}
+Anderson, P.: `A poor man's derivation of scaling laws for the Kondo problem', \textit{J. Phys. C.}, 1960, \textbf{3}, p. 2436
+
+\bibitem{2}
+Coleman, P.: `1/N expansion for the Kondo lattice', \textit{Phys. Rev. B}, 1983, \textbf{28}, pp. 5255-5262
+
+\bibitem{3}
+Ludwig, I. and Ludwig A. W. W.: `Kondo effect induced by a magnetic field', \textit{Phys. Rev. B}, 2001, \textbf{64}, p. 045328
+
+\end{thebibliography}
+
+\end{document}
+
+%\begin{table}[b]
+%\processtable{Coefficients and remainders for distribution KK ($k = 0.05$,
+%$v = 3$, $c_{1} = 1.5$, $c_{2} = 4.5$)}
+%{\begin{tabular}{|l|l|l|}\hline
+%$n$ & $a_{n}^{2}$ & $r_{k}(1)$\\\hline
+%0 & 3.602576748428 & 1.493719547999\\\hline
+%1 & 1.384791111989 & 0.108928436101\\\hline
+%2 & 0.108600438794 & 0.000327997399\\\hline
+%3 & 0.000275794597 & 0.000052202814\\\hline
+%4 & 0.000027616892 & 0.000024585922\\\hline
+%5 & 0.000018178621 & 0.000006407300\\\hline
+%\end{tabular}}{}
+%\end{table}
+%
+%So, the basic preamble and main body will be:
+%\verb"\documentclass[twocolumn]{el-author}"\\
+%\verb"\usepackage[...]{packages}"\\
+%\verb"\date{12 December 2012}"\\
+%\verb"\title{...}"\\
+%\verb"\author{...}"\\
+%\verb"\abstract{...}"\\
+%\verb"\maketitle{...}"\\
+%\verb"\begin{document}"\\
+%\verb"..."\\
+%\verb"\section{...}"\\
+%\verb"..."\\
+%\verb"\section{..}"\\
+%\verb"..."\\
+%\verb"\end{document}"
+
