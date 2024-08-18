@@ -10,47 +10,29 @@ mod stats;
 mod http;
 mod queue;
 mod socket;
+mod db;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 3)]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
+
+    let mut conn = db::get_redis_connection();
+    db::init(&mut conn);
 
     println!("Starting HTTP server...");
     let http_server = tokio::spawn(async {
         start_http_server().await;
     });
 
-    println!("Building queue...");
-    let queue = match build_queue().await {
-        Ok(q) => q,
-        Err(e) => {
-            eprintln!("Failed to build queue: {:?}", e);
-            return Err(Error::from(std::io::Error::new(std::io::ErrorKind::Other, "Failed to build queue")));
-        }
-    };
-    println!("Queue built.");
-
     println!("Starting socket...");
     let socket_task = tokio::spawn(async {
-        socket(queue).await;
-    });
-
-    println!("Starting containers...");
-    let containers_task = tokio::spawn(async {
-        container::start_containers().await?;
-        Ok::<(), Error>(())
+        socket().await;
     });
 
     // Await the HTTP server task and handle it separately
     let http_result = http_server.await;
     if let Err(e) = http_result {
         eprintln!("HTTP server task failed: {:?}", e);
-    }
-
-    // Await the other tasks
-    match tokio::try_join!(socket_task, containers_task) {
-        Ok(_) => println!("Socket and containers tasks completed."),
-        Err(e) => eprintln!("An error occurred: {:?}", e),
     }
 
     Ok(())

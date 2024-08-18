@@ -10,13 +10,10 @@ use std::net::SocketAddr;
 use std::time::Duration;
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{mpsc, Mutex};
-use tokio::time::timeout;
-use crate::queue::SharedQueue;
+use tokio::sync::Mutex;
+use crate::queue::{SharedQueue, build_queue};
 
-pub async fn socket(queue: SharedQueue) -> (mpsc::Sender<String>, mpsc::Receiver<String>) {
-    let (tx, rx) = mpsc::channel(32);
-
+pub async fn socket() {
     dotenv().ok();
     let ws_env_port = env::var("HOST_PORT_WS_DEPLOYMENT_AGENT")
         .expect("HOST_PORT_WS_DEPLOYMENT_AGENT must be set")
@@ -24,7 +21,7 @@ pub async fn socket(queue: SharedQueue) -> (mpsc::Sender<String>, mpsc::Receiver
         .expect("HOST_PORT_WS_DEPLOYMENT_AGENT must be a valid u16");
 
     let addr_ws = SocketAddr::from(([0, 0, 0, 0], ws_env_port));
-    let app = Router::new().route("/ws", get(move |ws: WebSocketUpgrade| http_to_ws(ws, queue.clone())));
+    let app = Router::new().route("/ws", get(http_to_ws));
 
     println!("Socket listening on {}", addr_ws);
 
@@ -32,13 +29,11 @@ pub async fn socket(queue: SharedQueue) -> (mpsc::Sender<String>, mpsc::Receiver
         .serve(app.into_make_service())
         .await
         .unwrap();
-
-    (tx, rx)
 }
 
-async fn http_to_ws(ws: WebSocketUpgrade, queue: SharedQueue) -> impl IntoResponse {
+async fn http_to_ws(ws: WebSocketUpgrade) -> impl IntoResponse {
     println!("WebSocket upgrade requested");
-    ws.on_upgrade(move |socket| handle_socket(socket, queue))
+    ws.on_upgrade(handle_socket)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,47 +42,39 @@ pub enum Event {
     // Other variants...
 }
 
-async fn handle_socket(socket: WebSocket, queue: SharedQueue) {
+async fn handle_socket(mut socket: WebSocket) {
     println!("WebSocket connection established");
-    let socket = Arc::new(Mutex::new(socket));
 
-    // Task for sending the entire queue at regular intervals
-    let queue_sender = queue.clone();
-    let socket_sender = Arc::clone(&socket);
     tokio::spawn(async move {
         loop {
-            // Lock the queue and serialize it
-            let queue_data = {
-                let queue = queue_sender.lock().await;
-                let queue_string = serde_json::to_string(&*queue).expect("Failed to serialize queue");
-                // println!("QUEUE: {}", queue_string);
-                queue_string
-            };
-            println!("{}", queue_data);
-            // Send the serialized queue as a single message
-            // Try to lock the socket with a timeout
-            match timeout(Duration::from_secs(5), socket_sender.lock()).await {
-                Ok(mut socket_lock) => {
-                    if let Err(e) = socket_lock.send(Message::Text(queue_data.clone())).await {
+            // Hole die aktuelle Queue
+            match build_queue().await {
+                Ok(shared_queue) => {
+                    let locked_queue = shared_queue.lock().await;
+                    let queue_string = serde_json::to_string(&*locked_queue).expect("Failed to serialize queue");
+
+                    // Sende die serialisierte Queue
+                    if let Err(e) = socket.send(Message::Text(queue_string)).await {
                         eprintln!("Error sending message: {}", e);
-                        // Break the loop if an error occurs to avoid further broken pipe errors
+                        // Breche die Schleife ab, falls ein Fehler auftritt
                         break;
                     }
-                    // println!("Successfully sent queue with websocket: {}.", queue_data);
                 }
-                Err(_) => {
-                    eprintln!("Timeout while trying to lock the socket");
+                Err(e) => {
+                    eprintln!("Failed to build queue: {:?}", e);
+                    break;
                 }
             }
-            // Wait before sending the queue again
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+            // Warte vor dem Senden des nächsten Updates
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     });
+
     /*
     // Task for receiving messages from the WebSocket
-    let socket_receiver = Arc::clone(&socket);
     tokio::spawn(async move {
-        while let Some(Ok(message)) = socket_receiver.lock().await.recv().await {
+        while let Some(Ok(message)) = socket.recv().await {
             match message {
                 Message::Text(text) => {
                     println!("Received message: {}", text);
@@ -101,6 +88,5 @@ async fn handle_socket(socket: WebSocket, queue: SharedQueue) {
             }
         }
     });
-
-     */
+    */
 }

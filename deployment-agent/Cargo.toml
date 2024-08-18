@@ -19,3 +19,6 @@ dotenv = "0.15"
 bollard = "0.16.1"
 rand = "0.8.4"
 chrono = "0.4.38"
+redis = "0.26.0"
+md5 = "0.7.0"
+uuid = { version = "1.10.0", features = ["v4"] }

@@ -5,7 +5,11 @@ services:
     image: redis:latest
     restart: always
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    networks:
+      - rust-network
+    environment:
+      - REDIS_PORT=${REDIS_PORT}
 
   deployment-agent:
     build:
@@ -27,6 +31,10 @@ services:
       - HOST_PORT_WS_DEPLOYMENT_AGENT=${HOST_PORT_WS_DEPLOYMENT_AGENT}
       - HOST_PORT_HTTP_DEPLOYMENT_AGENT=${HOST_PORT_HTTP_DEPLOYMENT_AGENT}
       - HOST_IP_HOST_INTERNAL=host.docker.internal
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - redis
     restart: unless-stopped
 
   dashboard:
@@ -39,8 +47,11 @@ services:
       - DEPLOYMENT_URL=http://deployment-agent:${HOST_PORT_HTTP_DEPLOYMENT_AGENT}/stats
       - PORT_DASHBOARD=${PORT_DASHBOARD}
       - HOST_IP_HOST_INTERNAL=host.docker.internal
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
     depends_on:
       - deployment-agent
+      - redis
     networks:
       - rust-network
     restart: unless-stopped
@@ -55,11 +66,14 @@ services:
       - rust-network
     depends_on:
       - deployment-agent
+      - redis
     environment:
       - HOST_PORT_WS_BALANCER=${HOST_PORT_WS_BALANCER}
       - HOST_PORT_HTTP_BALANCER=${HOST_PORT_HTTP_BALANCER}
       - HOST_PORT_WS_DEPLOYMENT_AGENT=${HOST_PORT_WS_DEPLOYMENT_AGENT}
       - HOST_IP_HOST_INTERNAL=host.docker.internal
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped

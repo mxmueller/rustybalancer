@@ -1,0 +1,51 @@
+@startuml
+participant "Deployment-Agent" as deploymentAgent
+database Redis
+
+
+alt initial setup
+
+    deploymentAgent --> Redis : check if redis has default container entrys
+    activate Redis
+
+    Redis --> deploymentAgent : no entry found
+    deactivate Redis
+
+    deploymentAgent --> Redis : write default container (number)
+        activate Redis
+
+    Redis --> deploymentAgent : wrote default container (number)
+        deactivate Redis
+
+    deploymentAgent --> deploymentAgent : start default numbers of containers
+
+    deploymentAgent --> deploymentAgent : hash containers and set init state
+
+    deploymentAgent --> Redis : write containers with hash and state
+        activate Redis
+
+        Redis --> deploymentAgent : confirm new container
+        deactivate Redis
+
+
+else Deployment-Agent already did the inital setup.
+
+deploymentAgent --> Redis : check if redis has default container entrys
+    activate Redis
+
+Redis --> deploymentAgent : found number of containers that should be up at the moment
+    deactivate Redis
+
+deploymentAgent --> deploymentAgent : get all running container by tag and hash them
+
+deploymentAgent --> Redis : check if running containers match containers in Database
+    activate Redis
+
+Redis --> deploymentAgent : get true or false per container
+    deactivate Redis
+
+deploymentAgent --> deploymentAgent : Do nothing (everything adds up), or delete/start containers
+
+end
+
+@enduml
