@@ -181,7 +181,7 @@ pub fn cleanup_orphaned_db_entries(
     Ok(())
 }
 
-pub async fn start_containers() -> Result<(), Error> {
+pub async fn container() -> Result<(), Error> {
     dotenv().ok();
     let image_name = env::var("DOCKER_IMAGE").expect("DOCKER_IMAGE must be set");
     let target_port: u16 = env::var("TARGET_PORT")

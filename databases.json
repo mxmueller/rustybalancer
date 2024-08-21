@@ -1,9 +1,0 @@
-[
-  {
-    "name": "Local Redis",
-    "host": "redis",
-    "port": 6379,
-    "username": "",
-    "password": ""
-  }
-]

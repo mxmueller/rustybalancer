@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 use std::pin::Pin;
 use futures::Future;
 use tokio::time::{interval, Duration};
-use crate::container::{list_running_containers, check_and_stop_container_if_not_in_db, cleanup_orphaned_db_entries, create_container, generate_hash_based_key, start_containers};
+use crate::container::{list_running_containers, check_and_stop_container_if_not_in_db, cleanup_orphaned_db_entries, create_container, generate_hash_based_key, container};
 use crate::db;
 use std::env;
 use serde::{Deserialize, Serialize};
@@ -39,7 +39,7 @@ pub async fn build_queue() -> Result<SharedQueue, axum::http::StatusCode> {
      };
 
      // Start the containers management logic before building the queue
-     match start_containers().await {
+     match container().await {
           Ok(_) => println!("Containers checked and started as necessary."),
           Err(e) => eprintln!("Failed to check or start containers: {:?}", e),
      }
