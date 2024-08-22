@@ -1,6 +1,7 @@
 use redis::{Commands, Connection};
 use std::env;
 use dotenv::dotenv;
+use crate::stats::ContainerStatus;
 
 pub fn get_redis_connection() -> Connection {
     dotenv().ok();
@@ -32,4 +33,11 @@ pub fn init(conn: &mut Connection) {
             let _: () = set_config_value(conn, key, value).unwrap();
         }
     }
+}
+
+pub fn update_container_status(conn: &mut Connection, status: &ContainerStatus) -> redis::RedisResult<()> {
+    let key = crate::container::generate_hash_based_key(&status.name, status.id.parse().unwrap_or(0));
+    conn.hset(&key, "status", &status.utilization_category)?;
+    conn.hset(&key, "score", status.score)?;
+    Ok(())
 }

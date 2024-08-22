@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::db;
 use crate::queue::QueueItem;
 
-pub fn generate_hash_based_key(app_identifier: &str, port: u16) -> String { // Funktion öffentlich machen
+pub fn generate_hash_based_key(app_identifier: &str, port: u16) -> String {
     let data = format!("{}:{}", app_identifier, port);
     let digest = md5::compute(data);
     format!("container:{:x}", digest)
@@ -154,6 +154,8 @@ pub async fn check_and_stop_container_if_not_in_db(
         Ok(Some(QueueItem {
             name,
             external_port: port.to_string(),
+            score: 0.0,
+            utilization_category: "Unknown".to_string(),
         }))
     } else {
         println!("Container '{}' with hash '{}' not found in the database. The container will be stopped.", name, key);
@@ -181,54 +183,50 @@ pub fn cleanup_orphaned_db_entries(
     Ok(())
 }
 
-pub async fn container() -> Result<(), Error> {
-    dotenv().ok();
+pub async fn manage_containers(app_identifier: &str, default_container: i16) -> Result<Vec<QueueItem>, Error> {
+    let mut conn = db::get_redis_connection();
     let image_name = env::var("DOCKER_IMAGE").expect("DOCKER_IMAGE must be set");
     let target_port: u16 = env::var("TARGET_PORT")
         .expect("TARGET_PORT must be set")
         .parse()
         .expect("TARGET_PORT must be a valid number");
 
-    let mut conn = db::get_redis_connection();
-
-    let default_container: i16 = match db::get_config_value::<i16>(&mut conn, "DEFAULT_CONTAINER") {
-        Some(value) => value,
-        None => {
-            eprintln!("DEFAULT_CONTAINER value not found in Redis.");
-            return Err(Error::from(std::io::Error::new(std::io::ErrorKind::Other, "DEFAULT_CONTAINER not set in Redis")));
-        }
-    };
-
-    let app_identifier = env::var("APP_IDENTIFIER").expect("APP_IDENTIFIER must be set");
-
-    let containers = list_running_containers(&app_identifier).await?;
+    let containers = list_running_containers(app_identifier).await?;
 
     let mut running_containers = HashMap::new();
+    let mut queue_items = Vec::new();
 
     for container in containers {
-        if let Some(item) = check_and_stop_container_if_not_in_db(&container, &mut conn, &app_identifier).await? {
-            running_containers.insert(generate_hash_based_key(&app_identifier, item.external_port.parse().unwrap_or(0)), container.id.clone());
+        if let Some(item) = check_and_stop_container_if_not_in_db(&container, &mut conn, app_identifier).await? {
+            if let Some(id) = &container.id {
+                running_containers.insert(generate_hash_based_key(app_identifier, item.external_port.parse().unwrap_or(0)), id.clone());
+            }
+            queue_items.push(item);
         }
     }
 
-    // Konvertierung von Option<String> zu String, um die richtige Signatur zu erfüllen
-    let running_container_keys: HashMap<String, String> = running_containers
-        .into_iter()
-        .filter_map(|(key, value)| value.map(|v| (key, v)))
-        .collect();
+    cleanup_orphaned_db_entries(&mut conn, &running_containers)?;
 
-    cleanup_orphaned_db_entries(&mut conn, &running_container_keys)?;
-
-    let existing_container_count = running_container_keys.len() as i16;
-    if existing_container_count < default_container {
-        for _ in existing_container_count + 1..=default_container {
+    let running_containers_count = running_containers.len() as i16;
+    if running_containers_count < default_container {
+        for _ in running_containers_count + 1..=default_container {
             let uuid = Uuid::new_v4();
-            let container_name = format!("worker-{}",  &uuid.to_string()[..8]);
-            match create_container(&container_name, &image_name, target_port, &app_identifier, &mut conn).await {
-                Ok(host_port) => println!("Successfully created container '{}' on port {}", container_name, host_port),
+            let container_name = format!("worker-{}", &uuid.to_string()[..8]);
+            match create_container(&container_name, &image_name, target_port, app_identifier, &mut conn).await {
+                Ok(host_port) => {
+                    let item = QueueItem {
+                        name: container_name.clone(),
+                        external_port: host_port.to_string(),
+                        score: 0.0,
+                        utilization_category: "Unknown".to_string(),
+                    };
+                    queue_items.push(item);
+                    println!("Successfully created container '{}' on port {}", container_name, host_port);
+                }
                 Err(e) => eprintln!("Failed to create container '{}': {:?}", container_name, e),
             }
         }
     }
-    Ok(())
+
+    Ok(queue_items)
 }

@@ -1,7 +1,6 @@
 use bollard::errors::Error;
 use dotenv::dotenv;
 use http::start_http_server;
-use crate::queue::build_queue;
 use crate::socket::socket;
 use axum::http::StatusCode;
 

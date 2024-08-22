@@ -67,7 +67,7 @@ async fn handle_socket(mut socket: WebSocket) {
             }
 
             // Warte vor dem Senden des nächsten Updates
-            tokio::time::sleep(Duration::from_secs(5)).await;
+            tokio::time::sleep(Duration::from_secs(2)).await;
         }
     });
 

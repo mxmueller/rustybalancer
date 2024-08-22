@@ -7,7 +7,9 @@ use std::env;
 use std::net::SocketAddr;
 use dotenv::dotenv;
 use tower_http::cors::{Any, CorsLayer};
-use crate::stats::{get_container_status, ContainerStatus};  // Importiere ContainerStatus aus stats.rs
+use crate::stats::{get_container_statuses, ContainerStatus};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 pub async fn start_http_server() {
     let app = Router::new()
@@ -35,7 +37,7 @@ pub async fn start_http_server() {
 }
 
 async fn get_stats() -> Result<Json<Vec<ContainerStatus>>, axum::http::StatusCode> {
-    match get_container_status().await {
+    match get_container_statuses().await {
         Ok(stats) => Ok(Json(stats)),
         Err(_) => Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR),
     }

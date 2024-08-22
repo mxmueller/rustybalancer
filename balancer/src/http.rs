@@ -20,7 +20,7 @@ async fn handle_request(req: Request<Body>, shared_state: SharedState) -> Result
         parts.uri = uri;
         let new_req = Request::from_parts(parts, body);
 
-        println!("Forwarding request to worker: {}", backend.name);  // Print the worker handling the request
+        // println!("Forwarding request to worker: {}", backend.name);  // Print the worker handling the request
 
         let client = Client::new();
         return client.request(new_req).await;
