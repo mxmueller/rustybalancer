@@ -11,11 +11,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="87692fba-a77a-4655-8ad8-dabc370d2a12" name="Changes" comment="#10_further-improving-of-the-states">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/balancer/src/http.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/http.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/balancer/src/queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/queue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deployment-agent/src/container.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/container.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deployment-agent/src/stats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/stats.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/http-stress/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/tests/http-stress/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/balancer/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/balancer/src/socket.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/socket.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,24 +57,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Cargo.Run balancer.executor": "Run",
-    "Cargo.Run.executor": "Run",
-    "DefaultPlantUmlFileTemplate": "UML Sequence",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/parallels/Git/RustyBalancer",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "org.rust.first.attach.projects": "true",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Cargo.Run balancer.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Run.executor&quot;: &quot;Run&quot;,
+    &quot;DefaultPlantUmlFileTemplate&quot;: &quot;UML Sequence&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/parallels/Git/RustyBalancer&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/grafana" />

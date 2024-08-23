@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Client, Request, Response, Server, Uri};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use rand::Rng;
 
 use crate::queue::QueueItem;
@@ -54,11 +54,11 @@ impl DynamicWeightedBalancer {
 async fn handle_request(
     req: Request<Body>,
     shared_state: SharedState,
-    balancer: Arc<Mutex<DynamicWeightedBalancer>>
+    balancer: Arc<RwLock<DynamicWeightedBalancer>>
 ) -> Result<Response<Body>, hyper::Error> {
-    let state = shared_state.lock().await;
+    let state = shared_state.read().await;
     if let Some(queue_items) = &*state {
-        let mut balancer = balancer.lock().await;
+        let mut balancer = balancer.write().await;
 
         if queue_items != &balancer.queue_items {
             println!("Updating queue items in balancer");
@@ -96,7 +96,7 @@ async fn handle_request(
 pub async fn start_http_server(shared_state: SharedState) -> Result<(), Box<dyn std::error::Error>> {
     let addr = ([0, 0, 0, 0], env::var("HOST_PORT_HTTP_BALANCER").unwrap().parse().unwrap()).into();
 
-    let balancer = Arc::new(Mutex::new(DynamicWeightedBalancer::new(vec![])));
+    let balancer = Arc::new(RwLock::new(DynamicWeightedBalancer::new(vec![])));
 
     let make_svc = make_service_fn(move |_| {
         let shared_state = shared_state.clone();

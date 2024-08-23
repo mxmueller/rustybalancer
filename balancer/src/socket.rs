@@ -4,11 +4,11 @@ use std::sync::Arc;
 use dotenv::dotenv;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use tokio::time::{sleep, Duration};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::queue::{read_queue, QueueItem};
 
-pub type SharedState = Arc<Mutex<Option<Vec<QueueItem>>>>;
+pub type SharedState = Arc<RwLock<Option<Vec<QueueItem>>>>;
 
 pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
@@ -28,13 +28,11 @@ pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std
                 let shared_state_clone = Arc::clone(&shared_state);
 
                 while let Some(msg) = ws_stream.next().await {
-                    // println!("Received a message: {:?}", msg);
                     match msg {
                         Ok(Message::Text(text)) => {
                             match read_queue(&text) {
                                 Ok(queue_items) => {
-                                    // println!("Queue items: {:?}", queue_items.iter());
-                                    let mut state = shared_state_clone.lock().await;
+                                    let mut state = shared_state_clone.write().await;
                                     *state = Some(queue_items);
                                 }
                                 Err(e) => {
