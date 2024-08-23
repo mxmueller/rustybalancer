@@ -150,7 +150,7 @@ pub async fn check_and_stop_container_if_not_in_db(
     let key = generate_hash_based_key(app_identifier, port);
 
     if db::check_config_value_exists(conn, &key) {
-        println!("Container '{}' with hash '{}' found in the database. Adding to queue.", name, key);
+        // println!("Container '{}' with hash '{}' found in the database. Adding to queue.", name, key);
         Ok(Some(QueueItem {
             name,
             external_port: port.to_string(),

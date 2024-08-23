@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/balancer/Cargo.toml" />
+    <cargoProject FILE="$PROJECT_DIR$/deployment-agent/Cargo.toml" />
+    <cargoProject FILE="$PROJECT_DIR$/tests/http-stress/Cargo.toml" />
+    <cargoProject FILE="$PROJECT_DIR$/tests/extreme-stress/extreme-stress/Cargo.toml" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="87692fba-a77a-4655-8ad8-dabc370d2a12" name="Changes" comment="#10_further-improving-of-the-states">
+      <change beforePath="$PROJECT_DIR$/balancer/src/http.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/http.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/balancer/src/queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/queue.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deployment-agent/src/container.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/container.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deployment-agent/src/stats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/stats.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/http-stress/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/tests/http-stress/src/main.rs" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Dockerfile" />
+        <option value="Rust File" />
+        <option value="UML Sequence" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;mxmueller&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mxmueller/RustyBalancer.git&quot;,
+    &quot;accountId&quot;: &quot;e0127d4b-6683-4007-b308-92f4f29caeb8&quot;
+  }
+}</component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="ufiic56q" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="2jH9OvbLSwCSEaeWlM1PSTcAyby" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Cargo.Run balancer.executor": "Run",
+    "Cargo.Run.executor": "Run",
+    "DefaultPlantUmlFileTemplate": "UML Sequence",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.rust.reset.selective.auto.import": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/home/parallels/Git/RustyBalancer",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
+    "org.rust.first.attach.projects": "true",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/grafana" />
+      <recent name="$PROJECT_DIR$/grafana/dashboards" />
+      <recent name="$PROJECT_DIR$/grafana/provisioning/datasources" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Cargo.Run balancer">
+    <configuration name="Run balancer" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="run --package balancer --bin balancer" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$/balancer" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Run" type="CargoCommandRunConfiguration" factoryName="Cargo Command" nameIsGenerated="true">
+      <option name="command" value="run" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$/balancer" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Cargo.Run balancer" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="87692fba-a77a-4655-8ad8-dabc370d2a12" name="Changes" comment="" />
+      <created>1721033106685</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1721033106685</updated>
+      <workItem from="1721033107617" duration="237000" />
+      <workItem from="1721034165298" duration="2004000" />
+      <workItem from="1721040841257" duration="9063000" />
+      <workItem from="1721074745494" duration="30506000" />
+      <workItem from="1721293842692" duration="9264000" />
+      <workItem from="1721379422477" duration="54139000" />
+      <workItem from="1721928289522" duration="4199000" />
+      <workItem from="1722169100929" duration="3887000" />
+      <workItem from="1722324076392" duration="2437000" />
+      <workItem from="1722585402747" duration="33903000" />
+      <workItem from="1722962693098" duration="19000" />
+      <workItem from="1722962716526" duration="7008000" />
+      <workItem from="1723056131053" duration="7364000" />
+      <workItem from="1723984082086" duration="71000" />
+      <workItem from="1723984161979" duration="45995000" />
+    </task>
+    <task id="LOCAL-00001" summary="#3_added-ports-for-http-and-ws">
+      <option name="closed" value="true" />
+      <created>1721077057757</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1721077057758</updated>
+    </task>
+    <task id="LOCAL-00002" summary="#3_added-ports-for-http-and-ws">
+      <option name="closed" value="true" />
+      <created>1721077802732</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1721077802733</updated>
+    </task>
+    <task id="LOCAL-00003" summary="#5_Auto-generate-Containers-with-docker-swarm-in-LB">
+      <option name="closed" value="true" />
+      <created>1721135432270</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1721135432270</updated>
+    </task>
+    <task id="LOCAL-00004" summary="#5_Get-stats-from-swarm-containers">
+      <option name="closed" value="true" />
+      <created>1721293270251</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1721293270251</updated>
+    </task>
+    <task id="LOCAL-00005" summary="#5_Get-stats-from-swarm-containers">
+      <option name="closed" value="true" />
+      <created>1721389637680</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1721389637680</updated>
+    </task>
+    <task id="LOCAL-00006" summary="#5_changed-swarm-to-default-dockerapi">
+      <option name="closed" value="true" />
+      <created>1721567438229</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1721567438229</updated>
+    </task>
+    <task id="LOCAL-00007" summary="#8_setup-dashboard-with-streamlit">
+      <option name="closed" value="true" />
+      <created>1721632451986</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1721632451986</updated>
+    </task>
+    <task id="LOCAL-00008" summary="fix: working communication over docker-compose">
+      <option name="closed" value="true" />
+      <created>1721827875636</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1721827875636</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Init: basic README.md">
+      <option name="closed" value="true" />
+      <created>1721828268465</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1721828268465</updated>
+    </task>
+    <task id="LOCAL-00010" summary="fix: cleaning Repo">
+      <option name="closed" value="true" />
+      <created>1721842129319</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1721842129319</updated>
+    </task>
+    <task id="LOCAL-00011" summary="fix: cleaning Repo">
+      <option name="closed" value="true" />
+      <created>1721842216161</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1721842216161</updated>
+    </task>
+    <task id="LOCAL-00012" summary="fix: cleaning Repo">
+      <option name="closed" value="true" />
+      <created>1721842224817</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1721842224817</updated>
+    </task>
+    <task id="LOCAL-00013" summary="fix: cleaning Repo">
+      <option name="closed" value="true" />
+      <created>1721842356582</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1721842356582</updated>
+    </task>
+    <task id="LOCAL-00014" summary="fix: cleaning Repo">
+      <option name="closed" value="true" />
+      <created>1721842359090</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1721842359090</updated>
+    </task>
+    <task id="LOCAL-00015" summary="#9_basic-and-stable-balancing-from-worker-queue">
+      <option name="closed" value="true" />
+      <created>1722848278008</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1722848278008</updated>
+    </task>
+    <task id="LOCAL-00016" summary="docs: added readme and installation setup">
+      <option name="closed" value="true" />
+      <created>1723021269105</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1723021269105</updated>
+    </task>
+    <task id="LOCAL-00017" summary="#10_self-healing_and-stable-queue">
+      <option name="closed" value="true" />
+      <created>1723994342097</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1723994342097</updated>
+    </task>
+    <task id="LOCAL-00018" summary="#10_improved-stats">
+      <option name="closed" value="true" />
+      <created>1724242235510</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1724242235510</updated>
+    </task>
+    <task id="LOCAL-00019" summary="#10_further-improving-of-the-states">
+      <option name="closed" value="true" />
+      <created>1724324826000</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1724324826000</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnknownFeatures">
+    <option featureType="com.intellij.fileTypeFactory" implementationName=".env" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="#3_added-ports-for-http-and-ws" />
+    <MESSAGE value="#5_Auto-generate-Containers-with-docker-swarm-in-LB" />
+    <MESSAGE value="#5_Get-stats-from-swarm-containers" />
+    <MESSAGE value="#5_changed-swarm-to-default-dockerapi" />
+    <MESSAGE value="#8_setup-dashboard-with-streamlit" />
+    <MESSAGE value="fix: working communication over docker-compose" />
+    <MESSAGE value="Init: basic README.md" />
+    <MESSAGE value="fix: cleaning Repo" />
+    <MESSAGE value="#9_basic-and-stable-balancing-from-worker-queue" />
+    <MESSAGE value="docs: added readme and installation setup" />
+    <MESSAGE value="#10_self-healing_and-stable-queue" />
+    <MESSAGE value="#10_improved-stats" />
+    <MESSAGE value="#10_further-improving-of-the-states" />
+    <option name="LAST_COMMIT_MESSAGE" value="#10_further-improving-of-the-states" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

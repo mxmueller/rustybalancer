@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct QueueItem {
     pub name: String,
     pub external_port: String,
+    pub score: f64,
+    pub utilization_category: String,
 }
 
 pub fn read_queue(text: &str) -> Result<Vec<QueueItem>, String> {

@@ -46,18 +46,16 @@ pub async fn get_container_statuses() -> Result<Vec<ContainerStatus>, Error> {
 
     let list_start = Instant::now();
     let containers = docker.list_containers(Some(options)).await?;
-    println!("Container list retrieved: {:?}", list_start.elapsed());
+//    println!("Container list retrieved: {:?}", list_start.elapsed());
 
-    println!("Found {} containers", containers.len());
+//    println!("Found {} containers", containers.len());
 
     let futures = containers.into_iter().map(|container| {
         let docker = docker.clone();
         async move {
             if let Some(id) = &container.id {
                 let name = container.names.unwrap_or_default().get(0).cloned().unwrap_or_default();
-                let start = Instant::now();
                 let status = get_single_container_status(&docker, id, name.clone()).await;
-                println!("Container {} status retrieved in {:?}", name, start.elapsed());
                 status
             } else {
                 Err(Error::IOError { err: std::io::Error::new(std::io::ErrorKind::Other, "No container ID") })
@@ -68,14 +66,6 @@ pub async fn get_container_statuses() -> Result<Vec<ContainerStatus>, Error> {
     let results = join_all(futures).await;
     let statuses: Vec<ContainerStatus> = results.into_iter().filter_map(Result::ok).collect();
 
-    println!("Container scores:");
-    for status in &statuses {
-        println!("  {} - CPU: {:.2}%, Memory: {:.2}%, Score: {:.6}, Category: {}",
-                 status.name, status.cpu_usage_percent, status.memory_usage_percent,
-                 status.score, status.utilization_category);
-    }
-
-    println!("Total time for status retrieval: {:?}", start_time.elapsed());
     Ok(statuses)
 }
 

@@ -35,7 +35,6 @@ async fn stress_test(url: &str, concurrency: usize, duration: Duration, delay: D
         sleep(delay).await;
     }
 
-    // Warte kurz, damit ausstehende Anfragen abgeschlossen werden können
     sleep(Duration::from_secs(5)).await;
 
     let total_requests = request_count.load(Ordering::Relaxed);
@@ -47,9 +46,9 @@ async fn stress_test(url: &str, concurrency: usize, duration: Duration, delay: D
 #[tokio::main]
 async fn main() {
     let url = "http://localhost:2548/";
-    let concurrency = 50000; // Sehr hohe Anzahl gleichzeitiger Anfragen
-    let test_duration = Duration::from_secs(180); // 3 Minuten Testdauer
-    let delay = Duration::from_micros(10); // Sehr kurze Verzögerung zwischen Anfragen
+    let concurrency = 50000;
+    let test_duration = Duration::from_secs(180);
+    let delay = Duration::from_micros(10);
 
     println!("Starting stress test...");
     println!("URL: {}", url);
