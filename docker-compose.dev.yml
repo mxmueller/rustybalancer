@@ -89,3 +89,5 @@ services:
 networks:
   rust-network:
     driver: bridge
+
+
