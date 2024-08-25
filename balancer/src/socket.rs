@@ -25,31 +25,32 @@ pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std
             Ok((mut ws_stream, _)) => {
                 println!("Connected to the Socket");
 
-                let shared_state_clone = Arc::clone(&shared_state);
-
                 while let Some(msg) = ws_stream.next().await {
                     match msg {
                         Ok(Message::Text(text)) => {
-                            match read_queue(&text) {
-                                Ok(queue_items) => {
-                                    let mut state = shared_state_clone.write().await;
-                                    *state = Some(queue_items);
+                            tokio::spawn({
+                                let shared_state = shared_state.clone();
+                                let text = text.clone();
+                                async move {
+                                    match read_queue(&text) {
+                                        Ok(queue_items) => {
+                                            let mut state = shared_state.write().await;
+                                            *state = Some(queue_items);
+                                        }
+                                        Err(e) => {
+                                            println!("{}", e);
+                                        }
+                                    }
                                 }
-                                Err(e) => {
-                                    println!("{}", e);
-                                }
-                            }
+                            });
                         }
-                        Ok(_) => (
-                            println!("Unknown data received.")
-                        ),
+                        Ok(_) => println!("Unknown data received."),
                         Err(e) => {
                             eprintln!("Error receiving message: {}", e);
                             break;
                         }
                     }
                 }
-
             }
             Err(e) => {
                 eprintln!("Failed to connect to Socket: {}. Retrying in 5 seconds...", e);
