@@ -11,6 +11,7 @@ use tokio::time::interval;
 use crate::queue::QueueItem;
 use crate::socket::SharedState;
 use crate::pool::ConnectionPool;
+use crate::cache::SimpleCache;
 
 struct WeightedQueueItem {
     item: QueueItem,
@@ -94,8 +95,15 @@ async fn handle_request(
     balancer: Arc<DynamicWeightedBalancer>,
     pool: Arc<ConnectionPool>,
     semaphore: Arc<Semaphore>,
+    cache: Arc<SimpleCache>,
 ) -> Result<Response<Body>, hyper::Error> {
     let _permit = semaphore.acquire().await.unwrap();
+
+    // Check cache first
+    let cache_key = req.uri().path().to_string();
+    if let Some(cached_response) = cache.get(&cache_key).await {
+        return Ok(Response::new(Body::from(cached_response)));
+    }
 
     if let Some(item) = balancer.next().await {
         let host_internal = env::var("HOST_IP_HOST_INTERNAL").expect("HOST_IP_HOST_INTERNAL must be set");
@@ -111,7 +119,17 @@ async fn handle_request(
         let new_req = Request::from_parts(parts, body);
 
         let client = pool.get().await;
-        return client.request(new_req).await;
+        let response = client.request(new_req).await?;
+
+        // Cache the response if it's successful
+        if response.status().is_success() {
+            let (parts, body) = response.into_parts();
+            let body_bytes = hyper::body::to_bytes(body).await?;
+            cache.set(cache_key, body_bytes.to_vec(), Duration::from_secs(300)).await;
+            return Ok(Response::from_parts(parts, Body::from(body_bytes)));
+        }
+
+        return Ok(response);
     }
 
     Ok(Response::builder()
@@ -120,7 +138,11 @@ async fn handle_request(
         .unwrap())
 }
 
-pub async fn start_http_server(shared_state: SharedState, connection_pool: Arc<ConnectionPool>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_http_server(
+    shared_state: SharedState,
+    connection_pool: Arc<ConnectionPool>,
+    cache: Arc<SimpleCache>
+) -> Result<(), Box<dyn std::error::Error>> {
     let addr = ([0, 0, 0, 0], env::var("HOST_PORT_HTTP_BALANCER").unwrap().parse().unwrap()).into();
 
     let balancer = Arc::new(DynamicWeightedBalancer::new(vec![]));
@@ -133,13 +155,15 @@ pub async fn start_http_server(shared_state: SharedState, connection_pool: Arc<C
         let balancer = balancer.clone();
         let pool = connection_pool.clone();
         let semaphore = semaphore.clone();
+        let cache = cache.clone();
         move |_| {
             let balancer = balancer.clone();
             let pool = pool.clone();
             let semaphore = semaphore.clone();
+            let cache = cache.clone();
             async move {
                 Ok::<_, hyper::Error>(service_fn(move |req| {
-                    handle_request(req, balancer.clone(), pool.clone(), semaphore.clone())
+                    handle_request(req, balancer.clone(), pool.clone(), semaphore.clone(), cache.clone())
                 }))
             }
         }
