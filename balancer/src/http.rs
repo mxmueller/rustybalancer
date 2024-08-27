@@ -90,6 +90,11 @@ impl DynamicWeightedBalancer {
     }
 }
 
+fn is_static_resource(path: &str) -> bool {
+    let static_extensions = [".jpg", ".jpeg", ".png", ".gif", ".css", ".js"];
+    static_extensions.iter().any(|ext| path.ends_with(ext))
+}
+
 async fn handle_request(
     req: Request<Body>,
     balancer: Arc<DynamicWeightedBalancer>,
@@ -99,10 +104,16 @@ async fn handle_request(
 ) -> Result<Response<Body>, hyper::Error> {
     let _permit = semaphore.acquire().await.unwrap();
 
-    // Check cache first
-    let cache_key = req.uri().path().to_string();
-    if let Some(cached_response) = cache.get(&cache_key).await {
-        return Ok(Response::new(Body::from(cached_response)));
+    let path = req.uri().path().to_string();
+    let method = req.method().clone();
+    let uri = req.uri().clone();
+    let is_static = is_static_resource(&path);
+
+    if is_static && method == hyper::Method::GET {
+        let cache_key = uri.to_string();
+        if let Some(cached_response) = cache.get(&cache_key).await {
+            return Ok(Response::new(Body::from(cached_response)));
+        }
     }
 
     if let Some(item) = balancer.next().await {
@@ -111,21 +122,23 @@ async fn handle_request(
         println!("Forwarding request to worker: {} (Port: {}, Score: {:.2}, Category: {})",
                  item.name, item.external_port, item.score, item.utilization_category);
 
-        let uri_string = format!("http://{}:{}{}", host_internal, item.external_port, req.uri().path());
-        let uri: Uri = uri_string.parse().unwrap();
+        let uri_string = format!("http://{}:{}{}", host_internal, item.external_port, uri.path());
+        let new_uri: Uri = uri_string.parse().unwrap();
 
         let (mut parts, body) = req.into_parts();
-        parts.uri = uri;
+        parts.uri = new_uri;
         let new_req = Request::from_parts(parts, body);
 
         let client = pool.get().await;
         let response = client.request(new_req).await?;
 
-        // Cache the response if it's successful
-        if response.status().is_success() {
+        if is_static && method == hyper::Method::GET && response.status().is_success() {
             let (parts, body) = response.into_parts();
             let body_bytes = hyper::body::to_bytes(body).await?;
-            cache.set(cache_key, body_bytes.to_vec(), Duration::from_secs(300)).await;
+
+            let cache_key = uri.to_string();
+            cache.set(cache_key, body_bytes.to_vec(), Duration::from_secs(3600)).await; // Cache for 1 hour
+
             return Ok(Response::from_parts(parts, Body::from(body_bytes)));
         }
 

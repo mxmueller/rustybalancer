@@ -5,9 +5,12 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::env;
 use futures::stream::StreamExt;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::time;
 use futures::future::join_all;
+
+const WC: f64 = 0.5;  // Weight for CPU
+const WM: f64 = 0.5;  // Weight for Memory
 
 #[derive(Serialize, Clone, Debug)]
 pub struct ContainerStatus {
@@ -19,15 +22,8 @@ pub struct ContainerStatus {
     pub utilization_category: String,
 }
 
-const WC: f64 = 0.5;  // Weight for CPU
-const WM: f64 = 0.5;  // Weight for Memory
-
 pub async fn get_container_statuses() -> Result<Vec<ContainerStatus>, Error> {
-    let start_time = Instant::now();
-    println!("Starting container status retrieval");
-
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
-    println!("Docker connection established: {:?}", start_time.elapsed());
 
     dotenv::dotenv().ok();
     let app_identifier = env::var("APP_IDENTIFIER").expect("APP_IDENTIFIER must be set");
@@ -44,11 +40,7 @@ pub async fn get_container_statuses() -> Result<Vec<ContainerStatus>, Error> {
         ..Default::default()
     };
 
-    let list_start = Instant::now();
     let containers = docker.list_containers(Some(options)).await?;
-//    println!("Container list retrieved: {:?}", list_start.elapsed());
-
-//    println!("Found {} containers", containers.len());
 
     let futures = containers.into_iter().map(|container| {
         let docker = docker.clone();
@@ -69,6 +61,27 @@ pub async fn get_container_statuses() -> Result<Vec<ContainerStatus>, Error> {
     Ok(statuses)
 }
 
+fn calculate_normalized_cpu_usage(cpu_usage_percent: f64, num_cpus: f64) -> f64 {
+    (cpu_usage_percent / num_cpus).min(100.0)
+}
+
+fn calculate_score(cpu_usage_percent: f64, memory_usage_percent: f64, num_cpus: f64) -> f64 {
+    let normalized_cpu_usage = calculate_normalized_cpu_usage(cpu_usage_percent, num_cpus);
+    WC * normalized_cpu_usage + WM * memory_usage_percent
+}
+
+fn calculate_memory_usage(stats: &bollard::container::Stats) -> f64 {
+    stats.memory_stats.usage.unwrap_or(0) as f64 / stats.memory_stats.limit.unwrap_or(1) as f64 * 100.0
+}
+
+fn categorize_utilization(score: f64) -> String {
+    match score {
+        s if s < 33.0 => "LU".to_string(),   // Low Utilization
+        s if s < 66.0 => "MU".to_string(),   // Medium Utilization
+        _ => "HU".to_string(),               // High Utilization
+    }
+}
+
 async fn get_single_container_status(docker: &Docker, container_id: &str, container_name: String) -> Result<ContainerStatus, Error> {
     let mut stats_stream = docker.stats(container_id, Some(StatsOptions{
         stream: true,
@@ -79,9 +92,19 @@ async fn get_single_container_status(docker: &Docker, container_id: &str, contai
     time::sleep(Duration::from_millis(100)).await;
     let stats2 = stats_stream.next().await.unwrap()?;
 
-    let cpu_usage_percent = calculate_cpu_usage(&stats1, &stats2);
+    let cpu_delta = stats2.cpu_stats.cpu_usage.total_usage - stats1.cpu_stats.cpu_usage.total_usage;
+    let system_delta = stats2.cpu_stats.system_cpu_usage.unwrap_or(0) - stats1.cpu_stats.system_cpu_usage.unwrap_or(0);
+    let num_cpus = stats2.cpu_stats.online_cpus.unwrap_or(1) as f64;
+
+    let cpu_usage_percent = if system_delta > 0 && cpu_delta > 0 {
+        (cpu_delta as f64 / system_delta as f64) * num_cpus * 100.0
+    } else {
+        0.0
+    };
+
     let memory_usage_percent = calculate_memory_usage(&stats2);
-    let score = calculate_score(cpu_usage_percent, memory_usage_percent);
+    let score = calculate_score(cpu_usage_percent, memory_usage_percent, num_cpus);
+    let utilization_category = categorize_utilization(score);
 
     Ok(ContainerStatus {
         id: container_id.to_string(),
@@ -89,34 +112,6 @@ async fn get_single_container_status(docker: &Docker, container_id: &str, contai
         cpu_usage_percent,
         memory_usage_percent,
         score,
-        utilization_category: categorize_utilization(score),
+        utilization_category,
     })
-}
-
-fn calculate_cpu_usage(stats1: &bollard::container::Stats, stats2: &bollard::container::Stats) -> f64 {
-    let cpu_delta = stats2.cpu_stats.cpu_usage.total_usage - stats1.cpu_stats.cpu_usage.total_usage;
-    let system_delta = stats2.cpu_stats.system_cpu_usage.unwrap_or(0) - stats1.cpu_stats.system_cpu_usage.unwrap_or(0);
-
-    if system_delta > 0 && cpu_delta > 0 {
-        let num_cpus = stats2.cpu_stats.online_cpus.unwrap_or(1) as f64;
-        (cpu_delta as f64 / system_delta as f64) * num_cpus * 100.0
-    } else {
-        0.0
-    }
-}
-
-fn calculate_memory_usage(stats: &bollard::container::Stats) -> f64 {
-    stats.memory_stats.usage.unwrap_or(0) as f64 / stats.memory_stats.limit.unwrap_or(1) as f64 * 100.0
-}
-
-fn calculate_score(cpu_usage: f64, memory_usage: f64) -> f64 {
-    WC * cpu_usage + WM * memory_usage
-}
-
-fn categorize_utilization(score: f64) -> String {
-    match score {
-        s if s < 33.0 => "LU".to_string(),   // Low Utilization
-        s if s < 66.0 => "MU".to_string(),   // Medium Utilization
-        _ => "HU".to_string(),               // High Utilization
-    }
 }

@@ -23,7 +23,12 @@ impl ConnectionPool {
 
     pub async fn get(self: &Arc<Self>) -> PooledConnection {
         let _permit = self.semaphore.acquire().await.unwrap();
-        let client = self.pool.lock().await.pop_front().unwrap();
+        let client = loop {
+            if let Some(client) = self.pool.lock().await.pop_front() {
+                break client;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        };
 
         PooledConnection {
             client: Some(client),

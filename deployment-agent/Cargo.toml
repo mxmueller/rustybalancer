@@ -10,16 +10,17 @@ tower = "0.4"
 tower-http = { version = "0.3", features = ["cors"] }
 hyper = { version = "0.14", features = ["full"] }
 tokio-tungstenite = "0.15"
-futures = "0.3.30"
+futures = "0.3"
 futures-util = "0.3.30"
 url = "2.5.2"
-serde = { version = "1.0.204", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.120"
 dotenv = "0.15"
 bollard = "0.16.1"
 rand = "0.8.4"
-chrono = "0.4.38"
+chrono = { version = "0.4", features = ["serde"] }
 redis = "0.26.0"
 md5 = "0.7.0"
 uuid = { version = "1.10.0", features = ["v4"] }
 rayon = "1.10.0"
+

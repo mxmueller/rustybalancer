@@ -15,7 +15,7 @@ use crate::cache::SimpleCache;  // Add this line to import SimpleCache
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() {
     let shared_state = Arc::new(RwLock::new(None));
-    let connection_pool = ConnectionPool::new(1000);
+    let connection_pool = ConnectionPool::new(5000);
     let cache = Arc::new(SimpleCache::new(10000));
 
     let ws_state = shared_state.clone();
