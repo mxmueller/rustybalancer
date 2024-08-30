@@ -23,4 +23,6 @@ redis = "0.26.0"
 md5 = "0.7.0"
 uuid = { version = "1.10.0", features = ["v4"] }
 rayon = "1.10.0"
+lazy_static = "1.4.0"
+thiserror = "1.0.63"
 

@@ -36,7 +36,7 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                               // Update scores for managed containers
                               for managed_container in &mut managed_containers {
                                    if let Some(status) = container_statuses.iter().find(|s| s.name == managed_container.name) {
-                                        managed_container.score = status.score;
+                                        managed_container.score = status.overall_score;
                                         managed_container.utilization_category = status.utilization_category.clone();
                                    }
                               }

@@ -38,6 +38,10 @@ pub fn init(conn: &mut Connection) {
 pub fn update_container_status(conn: &mut Connection, status: &ContainerStatus) -> redis::RedisResult<()> {
     let key = crate::container::generate_hash_based_key(&status.name, status.id.parse().unwrap_or(0));
     conn.hset(&key, "status", &status.utilization_category)?;
-    conn.hset(&key, "score", status.score)?;
+    conn.hset(&key, "overall_score", status.overall_score)?;
+    conn.hset(&key, "cpu_score", status.cpu_score)?;
+    conn.hset(&key, "memory_score", status.memory_score)?;
+    conn.hset(&key, "network_score", status.network_score)?;
+    conn.hset(&key, "availability_score", status.availability_score)?;
     Ok(())
 }

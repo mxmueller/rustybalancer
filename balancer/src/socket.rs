@@ -5,6 +5,7 @@ use dotenv::dotenv;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use tokio::time::{sleep, Duration};
 use tokio::sync::RwLock;
+use log::{info, error, warn};
 
 use crate::queue::{read_queue, QueueItem};
 
@@ -20,10 +21,15 @@ pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std
     let url_string = format!("ws://deployment-agent:{}/ws", ws_env_port);
     let url = url_string.as_str();
 
+    let mut retry_delay = Duration::from_secs(1);
+    let max_retry_delay = Duration::from_secs(60);
+
     loop {
+        info!("Attempting to connect to WebSocket at {}", url);
         match connect_async(url).await {
             Ok((mut ws_stream, _)) => {
-                println!("Connected to the Socket");
+                info!("Connected to the WebSocket");
+                retry_delay = Duration::from_secs(1);  // Reset retry delay on successful connection
 
                 while let Some(msg) = ws_stream.next().await {
                     match msg {
@@ -36,25 +42,27 @@ pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std
                                         Ok(queue_items) => {
                                             let mut state = shared_state.write().await;
                                             *state = Some(queue_items);
+                                            info!("Updated queue state");
                                         }
                                         Err(e) => {
-                                            println!("{}", e);
+                                            error!("Failed to parse queue data: {}", e);
                                         }
                                     }
                                 }
                             });
                         }
-                        Ok(_) => println!("Unknown data received."),
+                        Ok(_) => warn!("Received non-text message from WebSocket"),
                         Err(e) => {
-                            eprintln!("Error receiving message: {}", e);
+                            error!("Error receiving message: {}. Reconnecting...", e);
                             break;
                         }
                     }
                 }
             }
             Err(e) => {
-                eprintln!("Failed to connect to Socket: {}. Retrying in 5 seconds...", e);
-                sleep(Duration::from_secs(5)).await;
+                error!("Failed to connect to WebSocket: {}. Retrying in {} seconds...", e, retry_delay.as_secs());
+                sleep(retry_delay).await;
+                retry_delay = std::cmp::min(retry_delay * 2, max_retry_delay);
             }
         }
     }

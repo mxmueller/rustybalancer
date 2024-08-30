@@ -2,7 +2,6 @@ use bollard::errors::Error;
 use dotenv::dotenv;
 use http::start_http_server;
 use crate::socket::socket;
-use axum::http::StatusCode;
 
 mod container;
 mod stats;
@@ -28,10 +27,15 @@ async fn main() -> Result<(), Error> {
         socket().await;
     });
 
-    // Await the HTTP server task and handle it separately
-    let http_result = http_server.await;
+    // Await both tasks
+    let (http_result, socket_result) = tokio::join!(http_server, socket_task);
+
     if let Err(e) = http_result {
         eprintln!("HTTP server task failed: {:?}", e);
+    }
+
+    if let Err(e) = socket_result {
+        eprintln!("Socket task failed: {:?}", e);
     }
 
     Ok(())

@@ -33,6 +33,9 @@ services:
       - HOST_IP_HOST_INTERNAL=host.docker.internal
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - HOST_IP_HOST_INTERNAL=host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
     restart: unless-stopped

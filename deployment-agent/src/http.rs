@@ -8,8 +8,6 @@ use std::net::SocketAddr;
 use dotenv::dotenv;
 use tower_http::cors::{Any, CorsLayer};
 use crate::stats::{get_container_statuses, ContainerStatus};
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 pub async fn start_http_server() {
     let app = Router::new()
