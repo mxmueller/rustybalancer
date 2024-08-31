@@ -15,7 +15,7 @@ services:
     image: redis/redisinsight:latest
     restart: always
     ports:
-      - "5540:5540"
+      - "${REDIS_INSIGHT_PORT}:${REDIS_INSIGHT_PORT}"
     networks:
       - rust-network
 
