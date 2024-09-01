@@ -11,31 +11,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="87692fba-a77a-4655-8ad8-dabc370d2a12" name="Changes" comment="#10_further-improving-of-the-states">
-      <change afterPath="$PROJECT_DIR$/balancer/src/client.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/http-stress/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/balancer/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/balancer/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/balancer/src/http.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/http.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/balancer/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/balancer/src/pool.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/balancer/src/socket.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/socket.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/deployment-agent/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deployment-agent/src/container.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/container.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/deployment-agent/src/db.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/db.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deployment-agent/src/http.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/http.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deployment-agent/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/deployment-agent/src/queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/queue.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/deployment-agent/src/socket.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/socket.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/deployment-agent/src/stats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/stats.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docker-compose.dev.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.dev.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docker-compose.slim.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.slim.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/http-stress/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/tests/http-stress/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/http-stress/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tests/http-stress/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/http-stress/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/tests/http-stress/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/http-stress/target/.rustc_info.json" beforeDir="false" afterPath="$PROJECT_DIR$/tests/http-stress/target/.rustc_info.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/http-stress/target/release/stress_test" beforeDir="false" afterPath="$PROJECT_DIR$/tests/http-stress/target/release/stress_test" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

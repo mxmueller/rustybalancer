@@ -12,10 +12,11 @@ use tokio::sync::Mutex;
 use lazy_static::lazy_static;
 use tokio::net::TcpStream;
 
-const WC: f64 = 0.3;  // Weight for CPU
-const WM: f64 = 0.15; // Weight for Memory
+// Important, weights can be modified, but should be 1 (sum)
+const WC: f64 = 0.35;  // Weight for CPU
+const WM: f64 = 0.25; // Weight for Memory
 const WN: f64 = 0.15; // Weight for Network
-const WA: f64 = 0.4;  // Weight for Availability
+const WA: f64 = 0.25;  // Weight for Availability
 
 const HISTORY_SIZE: usize = 20;
 const BEST_TIME_WINDOW: usize = 10;

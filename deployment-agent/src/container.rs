@@ -26,11 +26,19 @@ fn store_container_info_init(
     port: u16,
     image: &str,
 ) -> redis::RedisResult<()> {
-    let _: () = conn.hset(key, "status", "Init")?;
+    let _: () = conn.hset(key, "category", "INIT")?; // LU, MU, HU, INIT, SUNDOWN
     let _: () = conn.hset(key, "port", port.to_string())?;
     let _: () = conn.hset(key, "image", image)?;
 
     Ok(())
+}
+
+pub fn update_container_category(
+    conn: &mut redis::Connection,
+    key: &str,
+    category: &str,
+) -> redis::RedisResult<()> {
+    conn.hset(key, "category", category)
 }
 
 async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
@@ -111,6 +119,33 @@ pub async fn create_container(
     Ok(host_port)
 }
 
+pub async fn create_single_container(
+    image_name: &str,
+    target_port: u16,
+    app_identifier: &str,
+    conn: &mut redis::Connection,
+) -> Result<QueueItem, Error> {
+    let uuid = Uuid::new_v4();
+    let container_name = format!("worker-{}", &uuid.to_string()[..8]);
+
+    match create_container(&container_name, image_name, target_port, app_identifier, conn).await {
+        Ok(host_port) => {
+            let item = QueueItem {
+                name: container_name.clone(),
+                external_port: host_port.to_string(),
+                score: 100.0, // Start with the best score
+                utilization_category: "LU".to_string(), // Start with Low Utilization
+            };
+            println!("Successfully created container '{}' on port {}", container_name, host_port);
+            Ok(item)
+        }
+        Err(e) => {
+            eprintln!("Failed to create container '{}': {:?}", container_name, e);
+            Err(e)
+        }
+    }
+}
+
 pub async fn list_running_containers(app_identifier: &str) -> Result<Vec<APIContainers>, Error> {
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
@@ -150,12 +185,12 @@ pub async fn check_and_stop_container_if_not_in_db(
     let key = generate_hash_based_key(app_identifier, port);
 
     if db::check_config_value_exists(conn, &key) {
-        // println!("Container '{}' with hash '{}' found in the database. Adding to queue.", name, key);
+        let category: String = conn.hget(&key, "category").unwrap_or_else(|_| "Unknown".to_string());
         Ok(Some(QueueItem {
             name,
             external_port: port.to_string(),
-            score: 0.0,
-            utilization_category: "Unknown".to_string(),
+            score: 100.0, // Start with the best score
+            utilization_category: category,
         }))
     } else {
         println!("Container '{}' with hash '{}' not found in the database. The container will be stopped.", name, key);
@@ -210,20 +245,11 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
     let running_containers_count = running_containers.len() as i16;
     if running_containers_count < default_container {
         for _ in running_containers_count + 1..=default_container {
-            let uuid = Uuid::new_v4();
-            let container_name = format!("worker-{}", &uuid.to_string()[..8]);
-            match create_container(&container_name, &image_name, target_port, app_identifier, &mut conn).await {
-                Ok(host_port) => {
-                    let item = QueueItem {
-                        name: container_name.clone(),
-                        external_port: host_port.to_string(),
-                        score: 0.0,
-                        utilization_category: "Unknown".to_string(),
-                    };
+            match create_single_container(&image_name, target_port, app_identifier, &mut conn).await {
+                Ok(item) => {
                     queue_items.push(item);
-                    println!("Successfully created container '{}' on port {}", container_name, host_port);
                 }
-                Err(e) => eprintln!("Failed to create container '{}': {:?}", container_name, e),
+                Err(e) => eprintln!("Failed to create container: {:?}", e),
             }
         }
     }

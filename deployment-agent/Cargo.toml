@@ -25,4 +25,5 @@ uuid = { version = "1.10.0", features = ["v4"] }
 rayon = "1.10.0"
 lazy_static = "1.4.0"
 thiserror = "1.0.63"
+once_cell = "1.19.0"
 

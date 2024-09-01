@@ -31,6 +31,7 @@ impl DynamicWeightedBalancer {
         let items = Arc::new(RwLock::new(
             queue_items
                 .into_iter()
+                .filter(|item| item.utilization_category != "SUNDOWN")
                 .map(|item| WeightedQueueItem {
                     weight: Self::calculate_weight(item.score),
                     item,
@@ -58,6 +59,7 @@ impl DynamicWeightedBalancer {
         let mut last_update = self.last_update.lock().await;
         if last_update.elapsed() >= self.update_interval {
             let mut items = self.items.write().await;
+            items.retain(|item| item.item.utilization_category != "SUNDOWN");
             for item in items.iter_mut() {
                 item.weight = Self::calculate_weight(item.item.score);
                 if item.weight == 0.0 {
@@ -99,6 +101,7 @@ impl DynamicWeightedBalancer {
         let mut items = self.items.write().await;
         *items = queue_items
             .into_iter()
+            .filter(|item| item.utilization_category != "SUNDOWN")
             .map(|item| WeightedQueueItem {
                 weight: Self::calculate_weight(item.score),
                 item,

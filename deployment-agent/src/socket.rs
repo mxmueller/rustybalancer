@@ -45,48 +45,29 @@ pub enum Event {
 async fn handle_socket(mut socket: WebSocket) {
     println!("WebSocket connection established");
 
-    tokio::spawn(async move {
-        loop {
-            // Hole die aktuelle Queue
-            match build_queue().await {
-                Ok(shared_queue) => {
-                    let locked_queue = shared_queue.lock().await;
-                    let queue_string = serde_json::to_string(&*locked_queue).expect("Failed to serialize queue");
+    loop {
+        // Hole die aktuelle Queue
+        match build_queue().await {
+            Ok(shared_queue) => {
+                let locked_queue = shared_queue.lock().await;
+                let queue_string = serde_json::to_string(&*locked_queue).expect("Failed to serialize queue");
 
-                    // Sende die serialisierte Queue
-                    if let Err(e) = socket.send(Message::Text(queue_string)).await {
-                        eprintln!("Error sending message: {}", e);
-                        // Breche die Schleife ab, falls ein Fehler auftritt
-                        break;
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Failed to build queue: {:?}", e);
+                // Sende die serialisierte Queue
+                if let Err(e) = socket.send(Message::Text(queue_string.clone())).await {
+                    eprintln!("Error sending message: {}", e);
+                    // Breche die Schleife ab, falls ein Fehler auftritt
                     break;
                 }
             }
-
-            // Warte vor dem Senden des nächsten Updates
-            tokio::time::sleep(Duration::from_secs(2)).await;
-        }
-    });
-
-    /*
-    // Task for receiving messages from the WebSocket
-    tokio::spawn(async move {
-        while let Some(Ok(message)) = socket.recv().await {
-            match message {
-                Message::Text(text) => {
-                    println!("Received message: {}", text);
-                    // Handle received message
-                }
-                Message::Close(_) => {
-                    println!("WebSocket connection closed");
-                    break;
-                }
-                _ => {}
+            Err(e) => {
+                eprintln!("Failed to build queue: {:?}", e);
+                break;
             }
         }
-    });
-    */
+
+        // Warte vor dem Senden des nächsten Updates
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+
+    println!("WebSocket connection closed");
 }
