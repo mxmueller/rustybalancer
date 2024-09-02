@@ -22,6 +22,9 @@ RustyBalancer is a load balancer and deployment engine prototype, featuring:
 
 # Setup
 
+
+REMINDER, das hier müsse https://forums.docker.com/t/connection-refused-on-host-docker-internal/136925/2
+
 This repository contains Docker Compose configurations for different environments: production, development, and a slim environment. The `run.sh` script located in the `jobs` directory allows you to easily build and start Docker containers for the specified environment.
 
 ## Prerequisites
