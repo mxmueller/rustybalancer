@@ -83,12 +83,14 @@ services:
       - HOST_IP_HOST_INTERNAL=host.docker.internal
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - TARGET_PORT=${TARGET_PORT}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
 networks:
   rust-network:
+    name: "rust-network"
     driver: bridge
 
 

@@ -3,8 +3,7 @@ use serde_json::from_str;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct QueueItem {
-    pub name: String,
-    pub external_port: String,
+    pub dns_name: String,
     pub score: f64,
     pub utilization_category: String,
 }

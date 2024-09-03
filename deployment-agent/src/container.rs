@@ -14,8 +14,8 @@ use uuid::Uuid;
 use crate::db;
 use crate::queue::QueueItem;
 
-pub fn generate_hash_based_key(app_identifier: &str, port: u16) -> String {
-    let data = format!("{}:{}", app_identifier, port);
+pub fn generate_hash_based_key(app_identifier: &str, container_name: &str) -> String {
+    let data = format!("{}:{}", app_identifier, container_name);
     let digest = md5::compute(data);
     format!("container:{:x}", digest)
 }
@@ -62,7 +62,7 @@ pub async fn create_container(
     target_port: u16,
     app_identifier: &str,
     conn: &mut redis::Connection,
-) -> Result<u16, Error> {
+) -> Result<String, Error> {
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
     pull_image(&docker, image_name).await?;
@@ -83,6 +83,7 @@ pub async fn create_container(
 
     let host_config = HostConfig {
         port_bindings: Some(port_bindings),
+        network_mode: Some("rust-network".to_string()),
         ..Default::default()
     };
 
@@ -101,7 +102,7 @@ pub async fn create_container(
         ..Default::default()
     };
 
-    let key = generate_hash_based_key(app_identifier, host_port);
+    let key = generate_hash_based_key(app_identifier, container_name);
 
     store_container_info_init(conn, &key, host_port, image_name)
         .map_err(|e| Error::from(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
@@ -110,13 +111,9 @@ pub async fn create_container(
         .create_container(Some(create_options), config)
         .await?;
 
-    println!("Created container '{}' with ID: {:?}", container_name, create_response.id);
-
     docker.start_container(&create_response.id, None::<StartContainerOptions<String>>).await?;
 
-    println!("Container '{}' is available on port: {}", container_name, host_port);
-
-    Ok(host_port)
+    Ok(container_name.to_string())
 }
 
 pub async fn create_single_container(
@@ -129,20 +126,15 @@ pub async fn create_single_container(
     let container_name = format!("worker-{}", &uuid.to_string()[..8]);
 
     match create_container(&container_name, image_name, target_port, app_identifier, conn).await {
-        Ok(host_port) => {
+        Ok(dns_name) => {
             let item = QueueItem {
-                name: container_name.clone(),
-                external_port: host_port.to_string(),
-                score: 100.0, // Start with the best score
-                utilization_category: "LU".to_string(), // Start with Low Utilization
+                dns_name,
+                score: 100.0,
+                utilization_category: "LU".to_string(),
             };
-            println!("Successfully created container '{}' on port {}", container_name, host_port);
             Ok(item)
         }
-        Err(e) => {
-            eprintln!("Failed to create container '{}': {:?}", container_name, e);
-            Err(e)
-        }
+        Err(e) => Err(e)
     }
 }
 
@@ -172,28 +164,22 @@ pub async fn check_and_stop_container_if_not_in_db(
 ) -> Result<Option<QueueItem>, Error> {
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
-    let name = container.names.as_ref()
+    let container_name = container.names.as_ref()
         .and_then(|names| names.get(0).cloned())
-        .unwrap_or_default();
+        .unwrap_or_default()
+        .trim_start_matches('/')
+        .to_string();
 
-    let port = container.ports.as_ref()
-        .and_then(|ports| ports.get(0))
-        .map(|p| p.public_port)
-        .unwrap_or(Some(0))
-        .unwrap_or(0);
-
-    let key = generate_hash_based_key(app_identifier, port);
+    let key = generate_hash_based_key(app_identifier, &container_name);
 
     if db::check_config_value_exists(conn, &key) {
         let category: String = conn.hget(&key, "category").unwrap_or_else(|_| "Unknown".to_string());
         Ok(Some(QueueItem {
-            name,
-            external_port: port.to_string(),
-            score: 100.0, // Start with the best score
+            dns_name: container_name,
+            score: 100.0,
             utilization_category: category,
         }))
     } else {
-        println!("Container '{}' with hash '{}' not found in the database. The container will be stopped.", name, key);
         docker.stop_container(container.id.as_deref().unwrap_or(""), None::<StopContainerOptions>).await?;
         docker.remove_container(container.id.as_deref().unwrap_or(""), None::<RemoveContainerOptions>).await?;
         Ok(None)
@@ -234,7 +220,7 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
     for container in containers {
         if let Some(item) = check_and_stop_container_if_not_in_db(&container, &mut conn, app_identifier).await? {
             if let Some(id) = &container.id {
-                running_containers.insert(generate_hash_based_key(app_identifier, item.external_port.parse().unwrap_or(0)), id.clone());
+                running_containers.insert(generate_hash_based_key(app_identifier, &item.dns_name), id.clone());
             }
             queue_items.push(item);
         }
@@ -255,4 +241,29 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
     }
 
     Ok(queue_items)
+}
+
+pub async fn remove_container(app_identifier: &str, container_name: &str) -> Result<(), Error> {
+    let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
+
+    // First, stop the container
+    docker.stop_container(container_name, None::<StopContainerOptions>).await?;
+
+    // Then, remove the container
+    docker.remove_container(
+        container_name,
+        Some(RemoveContainerOptions {
+            force: true,
+            ..Default::default()
+        }),
+    ).await?;
+
+    // Remove container info from Redis
+    let mut conn = db::get_redis_connection();
+    let key = generate_hash_based_key(app_identifier, container_name);
+    let _: () = conn.del(&key).map_err(|e| Error::from(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
+
+    println!("Container {} has been removed", container_name);
+
+    Ok(())
 }

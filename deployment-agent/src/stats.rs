@@ -11,8 +11,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use lazy_static::lazy_static;
 use tokio::net::TcpStream;
+use tokio::time::timeout;
 
-// Important, weights can be modified, but should be 1 (sum)
 const WC: f64 = 0.35;  // Weight for CPU
 const WM: f64 = 0.25; // Weight for Memory
 const WN: f64 = 0.15; // Weight for Network
@@ -58,7 +58,6 @@ impl ResponseTimeMetrics {
         }
         self.history.push_back(response_time);
 
-        // Update best times
         if self.best_times.is_empty() || response_time < *self.best_times.back().unwrap() {
             if self.best_times.len() >= BEST_TIME_WINDOW {
                 self.best_times.pop_front();
@@ -66,7 +65,6 @@ impl ResponseTimeMetrics {
             self.best_times.push_back(response_time);
         }
 
-        // Update dynamic threshold
         let avg_time = self.calculate_average();
         self.dynamic_threshold = (self.dynamic_threshold * 0.9 + avg_time * 1.5 * 0.1).max(0.5);
     }
@@ -101,16 +99,10 @@ impl ResponseTimeMetrics {
         let best_time = self.get_best_time();
         let trend = self.calculate_trend();
 
-        // Use a weighted average of current and average time
         let effective_time = 0.3 * current_time + 0.7 * avg_time;
-
-        // Calculate the ratio to the best time
         let ratio = effective_time / best_time;
-
-        // Use a more gradual scoring function
         let base_score = 100.0 * (1.0 / ratio).powf(1.5);
 
-        // Apply a softer penalty for times over the threshold
         let penalty = if effective_time > self.dynamic_threshold {
             let over_threshold = effective_time - self.dynamic_threshold;
             20.0 * (1.0 - (-over_threshold).exp())
@@ -118,16 +110,11 @@ impl ResponseTimeMetrics {
             0.0
         };
 
-        // Adjust score based on trend
         let trend_adjustment = trend * 10.0;
 
         let raw_score = (base_score - penalty + trend_adjustment).max(0.0).min(100.0);
 
-        // Apply EMA smoothing
         self.ema_score = EMA_ALPHA * raw_score + (1.0 - EMA_ALPHA) * self.ema_score;
-
-        println!("Debug: current_time = {}, avg_time = {}, best_time = {}, effective_time = {}, ratio = {}, base_score = {}, penalty = {}, trend_adjustment = {}, raw_score = {}, ema_score = {}",
-                 current_time, avg_time, best_time, effective_time, ratio, base_score, penalty, trend_adjustment, raw_score, self.ema_score);
 
         self.ema_score
     }
@@ -225,7 +212,9 @@ fn calculate_cpu_usage(stats1: &bollard::container::Stats, stats2: &bollard::con
 }
 
 fn calculate_memory_usage(stats: &bollard::container::Stats) -> f64 {
-    stats.memory_stats.usage.unwrap_or(0) as f64 / stats.memory_stats.limit.unwrap_or(1) as f64 * 100.0
+    let usage = stats.memory_stats.usage.unwrap_or(0) as f64;
+    let limit = stats.memory_stats.limit.unwrap_or(1) as f64;
+    (usage / limit) * 100.0
 }
 
 async fn calculate_network_usage(container_id: &str, stats1: &bollard::container::Stats, stats2: &bollard::container::Stats, duration: Duration) -> f64 {
@@ -261,10 +250,10 @@ fn calculate_score(cpu_score: f64, memory_score: f64, network_score: f64, availa
 
 fn categorize_utilization(score: f64) -> String {
     match score {
-        s if s >= 70.0 => "LU".to_string(),   // Low Utilization (Good performance)
-        s if s >= 40.0 => "MU".to_string(),   // Medium Utilization
-        _ => "HU".to_string(),                // High Utilization (Poor performance)
-    }
+        s if s >= 70.0 => "LU",   // Low Utilization (Good performance)
+        s if s >= 40.0 => "MU",   // Medium Utilization
+        _ => "HU",                // High Utilization (Poor performance)
+    }.to_string()
 }
 
 async fn check_container_availability(docker: &Docker, container_id: &str) -> f64 {
@@ -273,24 +262,26 @@ async fn check_container_availability(docker: &Docker, container_id: &str) -> f6
 }
 
 async fn get_container_response_time(docker: &Docker, container_id: &str) -> Option<f64> {
-    let host_internal = env::var("HOST_IP_HOST_INTERNAL").expect("HOST_IP_HOST_INTERNAL must be set");
-
     match docker.inspect_container(container_id, None).await {
         Ok(info) => {
+            let container_name = info.name.unwrap_or_default().trim_start_matches('/').to_string();
+
             if let Some(network_settings) = &info.network_settings {
-                if let Some(ports) = &network_settings.ports {
-                    for (_, host_bindings) in ports {
-                        if let Some(bindings) = host_bindings {
-                            for binding in bindings {
-                                if let Some(host_port) = &binding.host_port {
-                                    let addr = format!("{}:{}", host_internal, host_port);
+                if let Some(networks) = &network_settings.networks {
+                    if let Some(network) = networks.get("rust-network") {
+                        if let Some(ip_address) = &network.ip_address {
+                            if let Some(ports) = &network_settings.ports {
+                                for (container_port, _) in ports {
+                                    let port = container_port.split('/').next().unwrap_or("5000");
+                                    let addr = format!("{}:{}", ip_address, port);
+
                                     let start = Instant::now();
-                                    match TcpStream::connect(&addr).await {
-                                        Ok(_) => {
+                                    match timeout(Duration::from_secs(5), TcpStream::connect(&addr)).await {
+                                        Ok(Ok(_)) => {
                                             let duration = start.elapsed().as_secs_f64();
                                             return Some(duration);
                                         },
-                                        Err(_) => continue,
+                                        Ok(Err(_)) | Err(_) => continue,
                                     }
                                 }
                             }
@@ -300,7 +291,7 @@ async fn get_container_response_time(docker: &Docker, container_id: &str) -> Opt
             }
             None
         },
-        Err(_) => None
+        Err(_) => None,
     }
 }
 

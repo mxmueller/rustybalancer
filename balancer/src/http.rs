@@ -8,7 +8,6 @@ use rand::distributions::{WeightedIndex, Distribution};
 use rand::Rng;
 use tokio::time::{interval, sleep, timeout};
 use log::{info, error, warn};
-use std::net::ToSocketAddrs;
 
 use crate::queue::QueueItem;
 use crate::socket::SharedState;
@@ -63,7 +62,7 @@ impl DynamicWeightedBalancer {
             for item in items.iter_mut() {
                 item.weight = Self::calculate_weight(item.item.score);
                 if item.weight == 0.0 {
-                    warn!("Item {} has a weight of 0 (score: {})", item.item.name, item.item.score);
+                    warn!("Item {} has a weight of 0 (score: {})", item.item.dns_name, item.item.score);
                 }
             }
             *last_update = Instant::now();
@@ -114,8 +113,8 @@ impl DynamicWeightedBalancer {
         info!("Current Queue in Balancer:");
         for (index, weighted_item) in items.iter().enumerate() {
             let item = &weighted_item.item;
-            info!("  {}. {} (Port: {}, Score: {:.2}, Category: {}, Weight: {:.2})",
-                     index + 1, item.name, item.external_port, item.score, item.utilization_category, weighted_item.weight);
+            info!("  {}. {} (Score: {:.2}, Category: {}, Weight: {:.2})",
+                     index + 1, item.dns_name, item.score, item.utilization_category, weighted_item.weight);
         }
     }
 }
@@ -123,14 +122,6 @@ impl DynamicWeightedBalancer {
 fn is_static_resource(path: &str) -> bool {
     let static_extensions = [".jpg", ".jpeg", ".png", ".gif", ".css", ".js"];
     static_extensions.iter().any(|ext| path.ends_with(ext))
-}
-
-async fn resolve_host(host: &str, port: u16) -> Option<String> {
-    let addr = format!("{}:{}", host, port);
-    match addr.to_socket_addrs() {
-        Ok(mut addrs) => addrs.next().map(|addr| addr.ip().to_string()),
-        Err(_) => None,
-    }
 }
 
 async fn handle_request(
@@ -152,16 +143,12 @@ async fn handle_request(
     }
 
     if let Some(item) = balancer.next().await {
-        let host_internal = env::var("HOST_IP_HOST_INTERNAL").expect("HOST_IP_HOST_INTERNAL must be set");
-        let port = item.external_port.parse::<u16>().unwrap();
+        let port = env::var("TARGET_PORT").expect("TARGET_PORT must be set");
 
-        info!("Forwarding request to worker: {} (Port: {}, Score: {:.2}, Category: {})",
-                 item.name, item.external_port, item.score, item.utilization_category);
+        info!("Forwarding request to worker: {} (Score: {:.2}, Category: {})",
+                 item.dns_name, item.score, item.utilization_category);
 
-        let resolved_ip = resolve_host(&host_internal, port).await
-            .unwrap_or_else(|| host_internal.clone());
-
-        let uri_string = format!("http://{}:{}{}", resolved_ip, port, uri.path());
+        let uri_string = format!("http://{}:{}{}", item.dns_name, port, uri.path());
         let new_uri: Uri = uri_string.parse().unwrap();
 
         let mut retries = 0;

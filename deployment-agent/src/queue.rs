@@ -1,7 +1,7 @@
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::container::{manage_containers, generate_hash_based_key, update_container_category, create_single_container};
+use crate::container::{manage_containers, generate_hash_based_key, update_container_category, create_single_container, remove_container};
 use crate::stats::{get_container_statuses, ContainerStatus};
 use crate::db;
 use std::env;
@@ -9,25 +9,26 @@ use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::future::Future;
 use bollard::errors::Error as BollardError;
-use redis::RedisError;
+use redis::{Commands, RedisResult};
 use std::time::{Duration, Instant};
+use futures_util::SinkExt;
 use once_cell::sync::Lazy;
+use tabled::{Style, Table, Tabled};
 
-const HIGH_LOAD_THRESHOLD: f64 = 49.0;
+const HIGH_LOAD_THRESHOLD: f64 = 55.0;
 const CRITICAL_LOAD_THRESHOLD: f64 = 20.0;
-const LOW_LOAD_THRESHOLD: f64 = 70.0;
-const MAX_CONTAINERS: usize = 10;
-const COOLDOWN_PERIOD: Duration = Duration::from_secs(45);
+const LOW_LOAD_THRESHOLD: f64 = 80.0;
+const MAX_CONTAINERS: usize = 15;
+const COOLDOWN_PERIOD: Duration = Duration::from_secs(5);
 const SCALE_STEP: usize = 1;
-const SCALE_CHECK_PERIOD: Duration = Duration::from_secs(30);
+const SCALE_CHECK_PERIOD: Duration = Duration::from_secs(10);
 
 static GLOBAL_COOLDOWN: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
 static LAST_SCALE_CHECK: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Tabled)]
 pub struct QueueItem {
-     pub(crate) name: String,
-     pub(crate) external_port: String,
+     pub(crate) dns_name: String,
      pub(crate) score: f64,
      pub(crate) utilization_category: String,
 }
@@ -41,39 +42,37 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
 
           let app_identifier = env::var("APP_IDENTIFIER").expect("APP_IDENTIFIER must be set");
           let mut conn = db::get_redis_connection();
-          let default_container: i16 = db::get_config_value(&mut conn, "DEFAULT_CONTAINER")
-              .unwrap_or_else(|| {
-                   env::var("DEFAULT_CONTAINER")
-                       .expect("DEFAULT_CONTAINER must be set")
-                       .parse()
-                       .expect("DEFAULT_CONTAINER must be a valid number")
-              });
+          let default_container: i16 = conn.get("DEFAULT_CONTAINER").unwrap_or_else(|_| {
+               env::var("DEFAULT_CONTAINER")
+                   .expect("DEFAULT_CONTAINER must be set")
+                   .parse()
+                   .expect("DEFAULT_CONTAINER must be a valid number")
+          });
 
           match manage_containers(&app_identifier, default_container).await {
                Ok(mut managed_containers) => {
                     match get_container_statuses().await {
                          Ok(container_statuses) => {
                               for managed_container in &mut managed_containers {
-                                   let key = generate_hash_based_key(&app_identifier, managed_container.external_port.parse().unwrap_or(0));
-
-                                   let db_category: String = db::get_config_value(&mut conn, &format!("{}:category", key))
-                                       .unwrap_or_else(|| "UNKNOWN".to_string());
+                                   let key = generate_hash_based_key(&app_identifier, &managed_container.dns_name);
+                                   let db_category: String = conn.hget(&key, "category").unwrap_or_else(|_| "UNKNOWN".to_string());
 
                                    if db_category == "SUNDOWN" {
                                         managed_container.utilization_category = "SUNDOWN".to_string();
-                                        println!("Container {} is marked as SUNDOWN in the database. Keeping SUNDOWN status.", managed_container.name);
-                                   } else if let Some(status) = container_statuses.iter().find(|s| s.name == managed_container.name) {
+                                   } else if let Some(status) = container_statuses.iter().find(|s| s.name.trim_start_matches('/') == managed_container.dns_name.trim_start_matches('/')) {
                                         managed_container.score = status.overall_score;
-                                        if managed_container.utilization_category != "SUNDOWN" {
-                                             managed_container.utilization_category = status.utilization_category.clone();
-                                             if let Err(e) = update_container_category(&mut conn, &key, &managed_container.utilization_category) {
-                                                  eprintln!("Failed to update category in database: {:?}", e);
-                                             }
-                                        } else {
-                                             println!("Container {} is marked as SUNDOWN in memory. Keeping SUNDOWN status.", managed_container.name);
+                                        managed_container.utilization_category = status.utilization_category.clone();
+                                        if let Err(e) = update_container_category(&mut conn, &key, &managed_container.utilization_category) {
+                                             eprintln!("Failed to update category in database: {:?}", e);
                                         }
                                    }
+
+                                   if let Err(e) = conn.hset::<_, _, _, ()>(&key, "score", managed_container.score.to_string()) {
+                                        eprintln!("Failed to update score in database: {:?}", e);
+                                   }
                               }
+
+                              managed_containers = remove_inactive_sundown_containers(&app_identifier, managed_containers, &container_statuses).await;
 
                               if let Err(e) = check_and_scale_containers(&mut conn, &app_identifier, &container_statuses, &mut managed_containers).await {
                                    eprintln!("Failed to check and scale containers: {:?}", e);
@@ -94,11 +93,7 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                                    locked_queue.push_back(container);
                               }
 
-                              println!("Current Queue:");
-                              for (index, item) in locked_queue.iter().enumerate() {
-                                   println!("  {}. {} (Port: {}, Score: {:.2}, Category: {})",
-                                            index + 1, item.name, item.external_port, item.score, item.utilization_category);
-                              }
+                              print_final_queue(&locked_queue);
 
                               if locked_queue.is_empty() {
                                    println!("Queue is empty after rebuild. Triggering immediate rebuild...");
@@ -122,12 +117,62 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
      })
 }
 
+fn print_final_queue(queue: &VecDeque<QueueItem>) {
+     let mut table = Table::new(queue);
+     table.with(Style::modern());
+     println!("{}", table);
+}
+
+async fn remove_inactive_sundown_containers(app_identifier: &str, containers: Vec<QueueItem>, container_statuses: &[ContainerStatus]) -> Vec<QueueItem> {
+     let mut active_containers = Vec::new();
+     let status_map: HashMap<String, &ContainerStatus> = container_statuses.iter()
+         .map(|status| (status.name.trim_start_matches('/').to_string(), status))
+         .collect();
+
+     for container in containers {
+          if container.utilization_category == "SUNDOWN" {
+               let container_name = container.dns_name.trim_start_matches('/');
+               if let Some(status) = status_map.get(container_name) {
+                    if status.network_score >= 99.9 {
+                         println!("Attempting to remove inactive SUNDOWN container: {}", container_name);
+                         match remove_container(app_identifier, container_name).await {
+                              Ok(_) => {
+                                   println!("Successfully removed SUNDOWN container: {}", container_name);
+                                   continue; // Skip adding this container to active_containers
+                              }
+                              Err(e) => {
+                                   eprintln!("Failed to remove container {}: {:?}", container_name, e);
+                                   active_containers.push(container);
+                              }
+                         }
+                    } else {
+                         println!("SUNDOWN container {} not removed. Network score: {}", container_name, status.network_score);
+                         active_containers.push(container);
+                    }
+               } else {
+                    println!("Status not found for SUNDOWN container {}. Attempting to remove it anyway.", container_name);
+                    match remove_container(app_identifier, container_name).await {
+                         Ok(_) => println!("Successfully removed SUNDOWN container without status: {}", container_name),
+                         Err(e) => {
+                              eprintln!("Failed to remove container without status {}: {:?}", container_name, e);
+                              active_containers.push(container);
+                         }
+                    }
+               }
+          } else {
+               active_containers.push(container);
+          }
+     }
+     active_containers
+}
+
 async fn check_and_scale_containers(
      conn: &mut redis::Connection,
      app_identifier: &str,
      container_statuses: &[ContainerStatus],
      managed_containers: &mut [QueueItem],
 ) -> Result<(), BollardError> {
+     println!("DEBUG: Entering check_and_scale_containers");
      let active_containers: Vec<_> = managed_containers.iter()
          .filter(|c| c.utilization_category != "SUNDOWN")
          .collect();
@@ -140,6 +185,9 @@ async fn check_and_scale_containers(
      let has_critically_loaded_container = active_containers.iter()
          .any(|c| c.score < CRITICAL_LOAD_THRESHOLD);
 
+     println!("DEBUG: Active containers: {}, Average load: {:.2}, Has critically loaded container: {}",
+              active_container_count, average_load, has_critically_loaded_container);
+
      let cooldown_status = get_cooldown_status().await;
      let can_scale = can_scale().await;
 
@@ -151,7 +199,6 @@ async fn check_and_scale_containers(
      println!("Current conditions: Average load: {}, Active container count: {}, Has critically loaded container: {}, Cooldown: {}",
               average_load, active_container_count, has_critically_loaded_container, cooldown_status);
 
-     // Check if it's time to consider scaling (both up and down)
      let mut last_check = LAST_SCALE_CHECK.lock().await;
      if last_check.elapsed() >= SCALE_CHECK_PERIOD {
           *last_check = Instant::now();
@@ -160,21 +207,17 @@ async fn check_and_scale_containers(
           if active_container_count >= MAX_CONTAINERS {
                println!("Max container limit ({}) reached. Cannot scale up further.", MAX_CONTAINERS);
           } else if can_scale && (average_load < HIGH_LOAD_THRESHOLD || has_critically_loaded_container) {
-               // Scale up logic
                let containers_to_add = std::cmp::min(SCALE_STEP, MAX_CONTAINERS - active_container_count);
 
                for _ in 0..containers_to_add {
-                    let current_default: i16 = db::get_config_value(conn, "DEFAULT_CONTAINER").unwrap_or(env_default_container);
+                    let current_default: i16 = conn.get("DEFAULT_CONTAINER").unwrap_or(env_default_container);
                     let new_default = current_default + 1;
 
-                    match db::set_config_value(conn, "DEFAULT_CONTAINER", new_default) {
-                         Ok(_) => {},
-                         Err(e) => {
-                              eprintln!("Failed to update DEFAULT_CONTAINER in Redis: {:?}", e);
-                              return Err(BollardError::IOError {
-                                   err: std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
-                              });
-                         }
+                    if let Err(e) = conn.set::<_, _, ()>("DEFAULT_CONTAINER", new_default) {
+                         eprintln!("Failed to update DEFAULT_CONTAINER in Redis: {:?}", e);
+                         return Err(BollardError::IOError {
+                              err: std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
+                         });
                     }
 
                     let image_name = env::var("DOCKER_IMAGE").expect("DOCKER_IMAGE must be set");
@@ -198,8 +241,7 @@ async fn check_and_scale_containers(
                println!("Cooldown period activated. Next scaling possible after {:?}", COOLDOWN_PERIOD);
                println!("Added {} new container(s). New active container count: {}", containers_to_add, active_container_count + containers_to_add);
           } else if average_load > LOW_LOAD_THRESHOLD && active_container_count > env_default_container as usize {
-               // Scale down logic
-               let current_default: i16 = db::get_config_value(conn, "DEFAULT_CONTAINER").unwrap_or(env_default_container);
+               let current_default: i16 = conn.get("DEFAULT_CONTAINER").unwrap_or(env_default_container);
 
                let containers_to_remove = std::cmp::min(
                     SCALE_STEP,
@@ -216,18 +258,17 @@ async fn check_and_scale_containers(
                     containers_to_sundown.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
                     for container in containers_to_sundown.iter_mut().take(containers_to_remove) {
-                         let key = generate_hash_based_key(app_identifier, container.external_port.parse().unwrap_or(0));
+                         let key = generate_hash_based_key(app_identifier, &container.dns_name);
                          if let Err(e) = update_container_category(conn, &key, "SUNDOWN") {
-                              eprintln!("Failed to mark container {} for SUNDOWN: {:?}", container.name, e);
+                              eprintln!("Failed to mark container {} for SUNDOWN: {:?}", container.dns_name, e);
                          } else {
-                              println!("Marked container {} for graceful shutdown", container.name);
+                              println!("Marked container {} for graceful shutdown", container.dns_name);
                               container.utilization_category = "SUNDOWN".to_string();
                          }
                     }
 
-                    // Update DEFAULT_CONTAINER in Redis
                     let new_default = std::cmp::max(current_default - containers_to_remove as i16, env_default_container);
-                    if let Err(e) = db::set_config_value(conn, "DEFAULT_CONTAINER", new_default) {
+                    if let Err(e) = conn.set::<_, _, ()>("DEFAULT_CONTAINER", new_default) {
                          eprintln!("Failed to update DEFAULT_CONTAINER in Redis: {:?}", e);
                     } else {
                          println!("Updated DEFAULT_CONTAINER to {} due to scale-down", new_default);
@@ -244,6 +285,7 @@ async fn check_and_scale_containers(
           println!("Skipping scale check. Next check in {:?}", SCALE_CHECK_PERIOD.checked_sub(last_check.elapsed()).unwrap_or(Duration::from_secs(0)));
      }
 
+     println!("DEBUG: Exiting check_and_scale_containers");
      Ok(())
 }
 
