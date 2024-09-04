@@ -7,12 +7,15 @@ use std::collections::HashMap;
 use std::env;
 use rand::Rng;
 use bollard::image::CreateImageOptions;
-use futures_util::stream::StreamExt;
+use futures_util::StreamExt;
 use md5;
 use redis::Commands;
 use uuid::Uuid;
 use crate::db;
 use crate::queue::QueueItem;
+use std::time::Duration;
+use tokio::time::sleep;
+use log::{info, warn, error};
 
 pub fn generate_hash_based_key(app_identifier: &str, container_name: &str) -> String {
     let data = format!("{}:{}", app_identifier, container_name);
@@ -26,9 +29,20 @@ fn store_container_info_init(
     port: u16,
     image: &str,
 ) -> redis::RedisResult<()> {
-    let _: () = conn.hset(key, "category", "INIT")?; // LU, MU, HU, INIT, SUNDOWN
+    info!("Storing container info for key: {}", key);
+    let _: () = conn.hset(key, "category", "INIT")?;
+    let _: () = conn.hset(key, "score", "100")?;
     let _: () = conn.hset(key, "port", port.to_string())?;
     let _: () = conn.hset(key, "image", image)?;
+
+    // Verify that all fields were set correctly
+    let fields: HashMap<String, String> = conn.hgetall(key)?;
+    if fields.len() != 4 || !fields.contains_key("category") || !fields.contains_key("score")
+        || !fields.contains_key("port") || !fields.contains_key("image") {
+        warn!("Not all fields were set correctly for key: {}. Fields: {:?}", key, fields);
+    } else {
+        info!("Container info stored successfully for key: {}", key);
+    }
 
     Ok(())
 }
@@ -38,22 +52,50 @@ pub fn update_container_category(
     key: &str,
     category: &str,
 ) -> redis::RedisResult<()> {
+    info!("Updating container category for key: {} to {}", key, category);
     conn.hset(key, "category", category)
 }
 
 async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
+    info!("Pulling image: {}", image_name);
     let create_image_options = CreateImageOptions {
         from_image: image_name,
         ..Default::default()
     };
-    let mut stream = docker.create_image(Some(create_image_options), None, None);
-    while let Some(pull_result) = stream.next().await {
-        match pull_result {
-            Ok(output) => println!("{:?}", output),
-            Err(e) => eprintln!("Error while pulling image: {:?}", e),
+    let mut retry_count = 0;
+    let max_retries = 3;
+    let mut delay = Duration::from_secs(5);
+
+    while retry_count < max_retries {
+        let mut stream = docker.create_image(Some(create_image_options.clone()), None, None);
+        let mut success = true;
+
+        while let Some(pull_result) = stream.next().await {
+            match pull_result {
+                Ok(output) => info!("Image pull progress: {:?}", output),
+                Err(e) => {
+                    error!("Error while pulling image: {:?}", e);
+                    success = false;
+                    break;
+                }
+            }
+        }
+
+        if success {
+            info!("Image pulled successfully: {}", image_name);
+            return Ok(());
+        }
+
+        retry_count += 1;
+        if retry_count < max_retries {
+            warn!("Retrying image pull in {:?}...", delay);
+            sleep(delay).await;
+            delay *= 2; // Exponential backoff
         }
     }
-    Ok(())
+
+    error!("Max retries reached while pulling image: {}", image_name);
+    Err(Error::IOError { err: std::io::Error::new(std::io::ErrorKind::Other, "Max retries reached while pulling image") })
 }
 
 pub async fn create_container(
@@ -63,6 +105,7 @@ pub async fn create_container(
     app_identifier: &str,
     conn: &mut redis::Connection,
 ) -> Result<String, Error> {
+    info!("Creating container: {}", container_name);
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
     pull_image(&docker, image_name).await?;
@@ -104,16 +147,48 @@ pub async fn create_container(
 
     let key = generate_hash_based_key(app_identifier, container_name);
 
-    store_container_info_init(conn, &key, host_port, image_name)
-        .map_err(|e| Error::from(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
+    let mut retry_count = 0;
+    let max_retries = 3;
+    let mut delay = Duration::from_secs(5);
 
-    let create_response = docker
-        .create_container(Some(create_options), config)
-        .await?;
+    while retry_count < max_retries {
+        match docker.create_container(Some(create_options.clone()), config.clone()).await {
+            Ok(create_response) => {
+                info!("Container created successfully: {}", container_name);
 
-    docker.start_container(&create_response.id, None::<StartContainerOptions<String>>).await?;
+                // Store container info in Redis
+                if let Err(e) = store_container_info_init(conn, &key, host_port, image_name) {
+                    error!("Failed to store container info in Redis: {:?}", e);
+                    // Consider whether to proceed or return an error here
+                }
 
-    Ok(container_name.to_string())
+                // Start the container
+                match docker.start_container(&create_response.id, None::<StartContainerOptions<String>>).await {
+                    Ok(_) => {
+                        info!("Container started successfully: {}", container_name);
+                        return Ok(container_name.to_string());
+                    },
+                    Err(e) => {
+                        error!("Failed to start container: {:?}", e);
+                        // Consider cleanup actions here
+                        return Err(e);
+                    }
+                }
+            },
+            Err(e) => {
+                warn!("Error creating container {} (attempt {}): {:?}", container_name, retry_count + 1, e);
+                retry_count += 1;
+                if retry_count < max_retries {
+                    info!("Retrying creation of container {} in {:?}...", container_name, delay);
+                    sleep(delay).await;
+                    delay *= 2; // Exponential backoff
+                }
+            }
+        }
+    }
+
+    error!("Max retries reached while creating container: {}", container_name);
+    Err(Error::IOError { err: std::io::Error::new(std::io::ErrorKind::Other, "Max retries reached while creating container") })
 }
 
 pub async fn create_single_container(
@@ -139,6 +214,7 @@ pub async fn create_single_container(
 }
 
 pub async fn list_running_containers(app_identifier: &str) -> Result<Vec<APIContainers>, Error> {
+    info!("Listing running containers for app: {}", app_identifier);
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
     let filters = {
@@ -154,6 +230,7 @@ pub async fn list_running_containers(app_identifier: &str) -> Result<Vec<APICont
     };
 
     let containers = docker.list_containers(Some(options)).await?;
+    info!("Found {} containers for app: {}", containers.len(), app_identifier);
     Ok(containers)
 }
 
@@ -170,16 +247,20 @@ pub async fn check_and_stop_container_if_not_in_db(
         .trim_start_matches('/')
         .to_string();
 
+    info!("Checking container: {}", container_name);
+
     let key = generate_hash_based_key(app_identifier, &container_name);
 
     if db::check_config_value_exists(conn, &key) {
         let category: String = conn.hget(&key, "category").unwrap_or_else(|_| "Unknown".to_string());
+        info!("Container {} found in DB with category: {}", container_name, category);
         Ok(Some(QueueItem {
             dns_name: container_name,
             score: 100.0,
             utilization_category: category,
         }))
     } else {
+        warn!("Container {} not found in DB, stopping and removing", container_name);
         docker.stop_container(container.id.as_deref().unwrap_or(""), None::<StopContainerOptions>).await?;
         docker.remove_container(container.id.as_deref().unwrap_or(""), None::<RemoveContainerOptions>).await?;
         Ok(None)
@@ -190,12 +271,13 @@ pub fn cleanup_orphaned_db_entries(
     conn: &mut redis::Connection,
     running_container_keys: &HashMap<String, String>,
 ) -> Result<(), Error> {
+    info!("Cleaning up orphaned DB entries");
     let keys: Vec<String> = conn.keys("container:*")
         .map_err(|e| Error::from(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
 
     for key in keys {
         if !running_container_keys.contains_key(&key) {
-            println!("Deleting orphaned database entry '{}'", key);
+            info!("Deleting orphaned database entry '{}'", key);
             let _: () = conn.del(&key)
                 .map_err(|e| Error::from(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
         }
@@ -205,6 +287,7 @@ pub fn cleanup_orphaned_db_entries(
 }
 
 pub async fn manage_containers(app_identifier: &str, default_container: i16) -> Result<Vec<QueueItem>, Error> {
+    info!("Managing containers for app: {}", app_identifier);
     let mut conn = db::get_redis_connection();
     let image_name = env::var("DOCKER_IMAGE").expect("DOCKER_IMAGE must be set");
     let target_port: u16 = env::var("TARGET_PORT")
@@ -229,13 +312,17 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
     cleanup_orphaned_db_entries(&mut conn, &running_containers)?;
 
     let running_containers_count = running_containers.len() as i16;
+    info!("Current running containers: {}, Default containers: {}", running_containers_count, default_container);
+
     if running_containers_count < default_container {
-        for _ in running_containers_count + 1..=default_container {
+        for i in running_containers_count + 1..=default_container {
+            info!("Creating container {} of {}", i, default_container);
             match create_single_container(&image_name, target_port, app_identifier, &mut conn).await {
                 Ok(item) => {
+                    info!("Container created successfully: {}", item.dns_name);
                     queue_items.push(item);
                 }
-                Err(e) => eprintln!("Failed to create container: {:?}", e),
+                Err(e) => error!("Failed to create container: {:?}", e),
             }
         }
     }
@@ -244,26 +331,34 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
 }
 
 pub async fn remove_container(app_identifier: &str, container_name: &str) -> Result<(), Error> {
+    info!("Removing container: {}", container_name);
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
     // First, stop the container
-    docker.stop_container(container_name, None::<StopContainerOptions>).await?;
+    match docker.stop_container(container_name, None::<StopContainerOptions>).await {
+        Ok(_) => info!("Container stopped: {}", container_name),
+        Err(e) => warn!("Error stopping container {}: {:?}", container_name, e),
+    }
 
     // Then, remove the container
-    docker.remove_container(
+    match docker.remove_container(
         container_name,
         Some(RemoveContainerOptions {
             force: true,
             ..Default::default()
         }),
-    ).await?;
+    ).await {
+        Ok(_) => info!("Container removed: {}", container_name),
+        Err(e) => warn!("Error removing container {}: {:?}", container_name, e),
+    }
 
     // Remove container info from Redis
     let mut conn = db::get_redis_connection();
     let key = generate_hash_based_key(app_identifier, container_name);
-    let _: () = conn.del(&key).map_err(|e| Error::from(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
-
-    println!("Container {} has been removed", container_name);
+    match conn.del::<_, ()>(&key) {
+        Ok(_) => info!("Container info removed from Redis: {}", container_name),
+        Err(e) => warn!("Error removing container info from Redis: {:?}", e),
+    }
 
     Ok(())
 }

@@ -12,16 +12,8 @@
   <component name="ChangeListManager">
     <list default="true" id="87692fba-a77a-4655-8ad8-dabc370d2a12" name="Changes" comment="#10_further-improving-of-the-states">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/balancer/src/http.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/http.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/balancer/src/queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/balancer/src/queue.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/deployment-agent/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/deployment-agent/src/container.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/container.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deployment-agent/src/queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/queue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deployment-agent/src/stats.rs" beforeDir="false" afterPath="$PROJECT_DIR$/deployment-agent/src/stats.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.dev.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.dev.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.slim.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.slim.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/http-stress/target/.rustc_info.json" beforeDir="false" afterPath="$PROJECT_DIR$/tests/http-stress/target/.rustc_info.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,12 +39,12 @@
     &quot;assignee&quot;: &quot;mxmueller&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/mxmueller/RustyBalancer.git&quot;,
-    &quot;accountId&quot;: &quot;e0127d4b-6683-4007-b308-92f4f29caeb8&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "git@github.com:mxmueller/RustyBalancer.git",
+    "accountId": "e0127d4b-6683-4007-b308-92f4f29caeb8"
   }
-}</component>
+}]]></component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="ufiic56q" />
   </component>
@@ -156,6 +148,7 @@
       <workItem from="1723056131053" duration="7364000" />
       <workItem from="1723984082086" duration="71000" />
       <workItem from="1723984161979" duration="45995000" />
+      <workItem from="1725459506737" duration="1869000" />
     </task>
     <task id="LOCAL-00001" summary="#3_added-ports-for-http-and-ws">
       <option name="closed" value="true" />
