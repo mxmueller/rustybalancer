@@ -33,6 +33,12 @@ pub struct QueueItem {
      pub(crate) utilization_category: String,
 }
 
+const REQUIRED_FIELDS: [&str; 4] = ["category", "score", "port", "image"];
+
+fn is_container_complete(fields: &HashMap<String, String>) -> bool {
+     REQUIRED_FIELDS.iter().all(|&field| fields.contains_key(field))
+}
+
 pub type SharedQueue = Arc<Mutex<VecDeque<QueueItem>>>;
 
 pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::http::StatusCode>> + Send>> {
@@ -55,20 +61,30 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                          Ok(container_statuses) => {
                               for managed_container in &mut managed_containers {
                                    let key = generate_hash_based_key(&app_identifier, &managed_container.dns_name);
-                                   let db_category: String = conn.hget(&key, "category").unwrap_or_else(|_| "UNKNOWN".to_string());
 
-                                   if db_category == "SUNDOWN" {
-                                        managed_container.utilization_category = "SUNDOWN".to_string();
-                                   } else if let Some(status) = container_statuses.iter().find(|s| s.name.trim_start_matches('/') == managed_container.dns_name.trim_start_matches('/')) {
-                                        managed_container.score = status.overall_score;
-                                        managed_container.utilization_category = status.utilization_category.clone();
-                                        if let Err(e) = update_container_category(&mut conn, &key, &managed_container.utilization_category) {
-                                             eprintln!("Failed to update category in database: {:?}", e);
+                                   // Überprüfen Sie die Vollständigkeit des Containers vor der Aktualisierung
+                                   if let Ok(fields) = conn.hgetall::<_, HashMap<String, String>>(&key) {
+                                        if is_container_complete(&fields) {
+                                             if let Some(status) = container_statuses.iter().find(|s| s.name.trim_start_matches('/') == managed_container.dns_name.trim_start_matches('/')) {
+                                                  managed_container.score = status.overall_score;
+                                                  managed_container.utilization_category = status.utilization_category.clone();
+
+                                                  if let Err(e) = conn.hset::<_, _, _, ()>(&key, "score", managed_container.score.to_string()) {
+                                                       eprintln!("Failed to update score in database for {}: {:?}", managed_container.dns_name, e);
+                                                  }
+                                                  if let Err(e) = update_container_category(&mut conn, &key, &managed_container.utilization_category) {
+                                                       eprintln!("Failed to update category in database for {}: {:?}", managed_container.dns_name, e);
+                                                  }
+
+                                                  println!("Updated container {}: score = {}, category = {}",
+                                                           managed_container.dns_name, managed_container.score, managed_container.utilization_category);
+                                             }
+                                        } else {
+                                             println!("Container {} is incomplete. Skipping update.", managed_container.dns_name);
+                                             // Hier könnten Sie zusätzliche Logik hinzufügen, um mit unvollständigen Containern umzugehen
                                         }
-                                   }
-
-                                   if let Err(e) = conn.hset::<_, _, _, ()>(&key, "score", managed_container.score.to_string()) {
-                                        eprintln!("Failed to update score in database: {:?}", e);
+                                   } else {
+                                        println!("Failed to retrieve container data for {}. Skipping update.", managed_container.dns_name);
                                    }
                               }
 
