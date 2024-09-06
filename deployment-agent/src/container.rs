@@ -219,17 +219,18 @@ pub async fn list_running_containers(app_identifier: &str) -> Result<Vec<APICont
     let filters = {
         let mut map = HashMap::new();
         map.insert("label".to_string(), vec![format!("application={}", app_identifier)]);
+        map.insert("status".to_string(), vec!["running".to_string()]);
         map
     };
 
     let options = ListContainersOptions {
-        all: true,
+        all: false,
         filters,
         ..Default::default()
     };
 
     let containers = docker.list_containers(Some(options)).await?;
-    println!("Found {} containers for app: {}", containers.len(), app_identifier);
+    println!("Found {} running containers for app: {}", containers.len(), app_identifier);
     Ok(containers)
 }
 

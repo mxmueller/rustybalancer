@@ -1,7 +1,7 @@
-use std::collections::{VecDeque, HashMap};
+use std::collections::{VecDeque, HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::container::{manage_containers, generate_hash_based_key, update_container_category, create_single_container, remove_container};
+use crate::container::{manage_containers, generate_hash_based_key, update_container_category, create_single_container, remove_container, list_running_containers};
 use crate::stats::{get_container_statuses, ContainerStatus};
 use crate::db;
 use std::env;
@@ -43,10 +43,13 @@ pub type SharedQueue = Arc<Mutex<VecDeque<QueueItem>>>;
 
 pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::http::StatusCode>> + Send>> {
      Box::pin(async move {
+          println!("Starting build_queue function");
           let queue = VecDeque::new();
           let shared_queue = Arc::new(Mutex::new(queue));
 
           let app_identifier = env::var("APP_IDENTIFIER").expect("APP_IDENTIFIER must be set");
+          println!("App identifier: {}", app_identifier);
+
           let mut conn = db::get_redis_connection();
           let default_container: i16 = conn.get("DEFAULT_CONTAINER").unwrap_or_else(|_| {
                env::var("DEFAULT_CONTAINER")
@@ -54,16 +57,75 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                    .parse()
                    .expect("DEFAULT_CONTAINER must be a valid number")
           });
+          println!("Default container count: {}", default_container);
 
+          println!("Fetching running containers");
+          let running_containers = match list_running_containers(&app_identifier).await {
+               Ok(containers) => containers,
+               Err(e) => {
+                    eprintln!("Failed to list running containers: {:?}", e);
+                    return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+               }
+          };
+          println!("Found {} running containers", running_containers.len());
+
+          println!("Cleaning up database entries");
+          let db_containers: Vec<String> = conn.keys("container:*")
+              .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
+          println!("Found {} container entries in database", db_containers.len());
+
+          // Erstellen Sie einen HashSet der laufenden Container-Schlüssel
+          let running_container_keys: HashSet<String> = running_containers.iter()
+              .filter_map(|c| c.names.as_ref().and_then(|names| names.first()))
+              .map(|name| generate_hash_based_key(&app_identifier, name.trim_start_matches('/')))
+              .collect();
+
+          for db_container in db_containers {
+               if !running_container_keys.contains(&db_container) {
+                    println!("Container with key {} is in the database but not running. Removing from database.", db_container);
+                    let _: () = conn.del(&db_container)
+                        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
+               } else {
+                    println!("Container with key {} is running and in the database.", db_container);
+               }
+          }
+
+          let running_count = running_containers.len() as i16;
+          println!("Current running containers: {}, Default containers: {}", running_count, default_container);
+          if running_count < default_container {
+               println!("Running containers ({}) less than DEFAULT_CONTAINER ({}). Starting new containers.", running_count, default_container);
+               let containers_to_start = default_container - running_count;
+               for i in 0..containers_to_start {
+                    println!("Starting container {} of {}", i+1, containers_to_start);
+                    let image_name = env::var("DOCKER_IMAGE").expect("DOCKER_IMAGE must be set");
+                    let target_port: u16 = env::var("TARGET_PORT")
+                        .expect("TARGET_PORT must be set")
+                        .parse()
+                        .expect("TARGET_PORT must be a valid number");
+
+                    match create_single_container(&image_name, target_port, &app_identifier, &mut conn).await {
+                         Ok(container) => println!("New container created successfully: {}", container.dns_name),
+                         Err(e) => {
+                              eprintln!("Failed to create new container: {:?}", e);
+                              return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+                         }
+                    }
+               }
+          }
+
+          println!("Managing containers");
           match manage_containers(&app_identifier, default_container).await {
                Ok(mut managed_containers) => {
+                    println!("Successfully managed containers. Count: {}", managed_containers.len());
                     match get_container_statuses().await {
                          Ok(container_statuses) => {
+                              println!("Retrieved container statuses. Count: {}", container_statuses.len());
                               for managed_container in &mut managed_containers {
                                    let key = generate_hash_based_key(&app_identifier, &managed_container.dns_name);
+                                   println!("Processing container: {} with key: {}", managed_container.dns_name, key);
 
-                                   // Überprüfen Sie die Vollständigkeit des Containers vor der Aktualisierung
                                    if let Ok(fields) = conn.hgetall::<_, HashMap<String, String>>(&key) {
+                                        println!("Retrieved fields for container {}: {:?}", managed_container.dns_name, fields);
                                         if is_container_complete(&fields) {
                                              if let Some(status) = container_statuses.iter().find(|s| s.name.trim_start_matches('/') == managed_container.dns_name.trim_start_matches('/')) {
                                                   managed_container.score = status.overall_score;
@@ -78,22 +140,26 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
 
                                                   println!("Updated container {}: score = {}, category = {}",
                                                            managed_container.dns_name, managed_container.score, managed_container.utilization_category);
+                                             } else {
+                                                  println!("No status found for container: {}", managed_container.dns_name);
                                              }
                                         } else {
-                                             println!("Container {} is incomplete. Skipping update.", managed_container.dns_name);
-                                             // Hier könnten Sie zusätzliche Logik hinzufügen, um mit unvollständigen Containern umzugehen
+                                             println!("Container {} is incomplete. Fields: {:?}", managed_container.dns_name, fields);
                                         }
                                    } else {
-                                        println!("Failed to retrieve container data for {}. Skipping update.", managed_container.dns_name);
+                                        println!("Failed to retrieve container data for {}.", managed_container.dns_name);
                                    }
                               }
 
+                              println!("Removing inactive SUNDOWN containers");
                               managed_containers = remove_inactive_sundown_containers(&app_identifier, managed_containers, &container_statuses).await;
 
+                              println!("Checking and scaling containers");
                               if let Err(e) = check_and_scale_containers(&mut conn, &app_identifier, &container_statuses, &mut managed_containers).await {
                                    eprintln!("Failed to check and scale containers: {:?}", e);
                               }
 
+                              println!("Sorting managed containers");
                               managed_containers.sort_by(|a, b| {
                                    if a.utilization_category == "SUNDOWN" && b.utilization_category != "SUNDOWN" {
                                         std::cmp::Ordering::Greater
@@ -104,6 +170,7 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                                    }
                               });
 
+                              println!("Updating shared queue");
                               let mut locked_queue = shared_queue.lock().await;
                               for container in managed_containers {
                                    locked_queue.push_back(container);
@@ -129,10 +196,10 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                }
           }
 
+          println!("build_queue function completed successfully");
           Ok(shared_queue)
      })
 }
-
 fn print_final_queue(queue: &VecDeque<QueueItem>) {
      let mut table = Table::new(queue);
      table.with(Style::modern());
