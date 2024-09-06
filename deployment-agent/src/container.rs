@@ -300,12 +300,34 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
     let mut running_containers = HashMap::new();
     let mut queue_items = Vec::new();
 
+    // Step 1: Process existing containers
     for container in containers {
-        if let Some(item) = check_and_stop_container_if_not_in_db(&container, &mut conn, app_identifier).await? {
-            if let Some(id) = &container.id {
-                running_containers.insert(generate_hash_based_key(app_identifier, &item.dns_name), id.clone());
+        let container_name = container.names.as_ref()
+            .and_then(|names| names.get(0).cloned())
+            .unwrap_or_default()
+            .trim_start_matches('/')
+            .to_string();
+
+        let key = generate_hash_based_key(app_identifier, &container_name);
+
+        // Check the database for SUNDOWN status
+        let db_category: String = conn.hget(&key, "category").unwrap_or_else(|_| "Unknown".to_string());
+
+        if db_category == "SUNDOWN" {
+            // If the container is marked as SUNDOWN in the database, maintain this state
+            queue_items.push(QueueItem {
+                dns_name: container_name.clone(),
+                score: 0.0, // Set a low score for SUNDOWN containers
+                utilization_category: "SUNDOWN".to_string(),
+            });
+        } else {
+            // For non-SUNDOWN containers, proceed with normal processing
+            if let Some(item) = check_and_stop_container_if_not_in_db(&container, &mut conn, app_identifier).await? {
+                if let Some(id) = &container.id {
+                    running_containers.insert(generate_hash_based_key(app_identifier, &item.dns_name), id.clone());
+                }
+                queue_items.push(item);
             }
-            queue_items.push(item);
         }
     }
 
@@ -314,6 +336,7 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
     let running_containers_count = running_containers.len() as i16;
     println!("Current running containers: {}, Default containers: {}", running_containers_count, default_container);
 
+    // Step 2: Create new containers if needed
     if running_containers_count < default_container {
         for i in running_containers_count + 1..=default_container {
             println!("Creating container {} of {}", i, default_container);
@@ -329,7 +352,6 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
 
     Ok(queue_items)
 }
-
 pub async fn remove_container(app_identifier: &str, container_name: &str) -> Result<(), Error> {
     println!("Removing container: {}", container_name);
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
