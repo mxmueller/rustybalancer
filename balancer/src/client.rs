@@ -1,121 +1,117 @@
 use std::sync::Arc;
-use hyper::{Client, client::HttpConnector};
+use std::fmt;
+use hyper::{Client, client::HttpConnector, Request, Response, Body};
 use hyper_tls::HttpsConnector;
-use tokio::sync::{Semaphore, Mutex};
-use std::time::Duration;
-use log::{info, warn};
+use tokio::sync::mpsc;
+use tokio::time::{timeout, Duration};
 use futures::future::join_all;
 
-const MAX_CONNECTIONS: usize = 10_000;
-const CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
-const MAX_IDLE_CONNECTIONS: usize = 1_000;
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 pub enum ClientError {
-    SemaphoreError,
+    RequestCanceled,
+    RequestTimeout,
     HyperError(hyper::Error),
 }
 
+impl fmt::Display for ClientError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ClientError::RequestCanceled => write!(f, "Request was canceled"),
+            ClientError::RequestTimeout => write!(f, "Request timed out"),
+            ClientError::HyperError(e) => write!(f, "Hyper error: {}", e),
+        }
+    }
+}
+
 impl From<hyper::Error> for ClientError {
-    fn from(err: hyper::Error) -> Self {
+    fn from(err: hyper::Error) -> ClientError {
         ClientError::HyperError(err)
     }
 }
 
-pub struct SharedClient {
-    clients: Vec<Client<HttpsConnector<HttpConnector>>>,
-    semaphore: Arc<Semaphore>,
-    current_client: Mutex<usize>,
+struct QueuedRequest {
+    request: Request<Body>,
+    response_sender: mpsc::Sender<Result<Response<Body>, ClientError>>,
 }
 
-impl SharedClient {
+pub struct UnboundedClient {
+    client: Client<HttpsConnector<HttpConnector>>,
+    request_sender: mpsc::Sender<QueuedRequest>,
+}
+
+impl UnboundedClient {
     pub fn new() -> Arc<Self> {
-        info!("Initializing SharedClient with {} max connections", MAX_CONNECTIONS);
-
-        let mut http = HttpConnector::new();
-        http.set_nodelay(true);
-        http.set_keepalive(Some(CONNECTION_TIMEOUT));
         let https = HttpsConnector::new();
+        let client = Client::builder()
+            .pool_idle_timeout(Some(Duration::from_secs(30)))
+            .build::<_, hyper::Body>(https);
 
-        let num_workers = num_cpus::get();
-        let clients: Vec<Client<HttpsConnector<HttpConnector>>> = (0..num_workers)
-            .map(|_| {
-                Client::builder()
-                    .pool_max_idle_per_host(MAX_IDLE_CONNECTIONS / num_workers)
-                    .pool_idle_timeout(Some(CONNECTION_TIMEOUT))
-                    .build::<_, hyper::Body>(https.clone())
-            })
-            .collect();
+        let (request_sender, mut request_receiver) = mpsc::channel::<QueuedRequest>(100_000);
 
-        Arc::new(SharedClient {
-            clients,
-            semaphore: Arc::new(Semaphore::new(MAX_CONNECTIONS)),
-            current_client: Mutex::new(0),
-        })
-    }
-
-    pub async fn get(&self) -> Result<ClientGuard<'_>, ClientError> {
-        match self.semaphore.clone().acquire_owned().await {
-            Ok(permit) => {
-                let mut current = self.current_client.lock().await;
-                let client_index = *current;
-                *current = (*current + 1) % self.clients.len();
-
-                Ok(ClientGuard {
-                    shared_client: self,
-                    client_index,
-                    _permit: permit,
-                })
-            },
-            Err(_) => {
-                warn!("Failed to acquire semaphore permit");
-                Err(ClientError::SemaphoreError)
-            }
-        }
-    }
-
-    pub async fn execute_requests<F, Fut, T>(&self, requests: Vec<F>) -> Vec<Result<T, ClientError>>
-    where
-        F: for<'a> FnOnce(ClientGuard<'a>) -> Fut,
-        Fut: std::future::Future<Output = Result<T, hyper::Error>>,
-    {
-        let futures = requests.into_iter().map(|request| {
-            let client = self;
-            async move {
-                match client.get().await {
-                    Ok(guard) => request(guard).await.map_err(ClientError::from),
-                    Err(e) => Err(e),
-                }
+        let client_clone = client.clone();
+        tokio::spawn(async move {
+            while let Some(queued_request) = request_receiver.recv().await {
+                let client = client_clone.clone();
+                tokio::spawn(async move {
+                    let result = client.request(queued_request.request).await
+                        .map_err(ClientError::from);
+                    match &result {
+                        Ok(response) => println!("Request successful. Status: {:?}", response.status()),
+                        Err(e) => println!("Request failed: {}", e),
+                    }
+                    if let Err(e) = queued_request.response_sender.send(result).await {
+                        println!("Failed to send response: {}", e);
+                    }
+                });
             }
         });
 
-        join_all(futures).await
+        Arc::new(UnboundedClient {
+            client,
+            request_sender,
+        })
+    }
+
+    pub async fn request(&self, request: Request<Body>) -> Result<Response<Body>, ClientError> {
+        let (response_sender, mut response_receiver) = mpsc::channel(1);
+        let queued_request = QueuedRequest {
+            request,
+            response_sender,
+        };
+
+        if let Err(e) = self.request_sender.send(queued_request).await {
+            println!("Failed to queue request: {}", e);
+            return Err(ClientError::RequestCanceled);
+        }
+        match timeout(REQUEST_TIMEOUT, response_receiver.recv()).await {
+            Ok(Some(result)) => {
+                println!("Received response within timeout");
+                result
+            },
+            Ok(None) => {
+                println!("Channel closed unexpectedly");
+                Err(ClientError::RequestCanceled)
+            },
+            Err(_) => {
+                println!("Request timed out");
+                Err(ClientError::RequestTimeout)
+            }
+        }
     }
 }
 
-pub struct ClientGuard<'a> {
-    shared_client: &'a SharedClient,
-    client_index: usize,
-    _permit: tokio::sync::OwnedSemaphorePermit,
-}
-
-impl<'a> std::ops::Deref for ClientGuard<'a> {
-    type Target = Client<HttpsConnector<HttpConnector>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.shared_client.clients[self.client_index]
-    }
-}
-
-// Helper function to create a pool of worker threads
+// Keep this function for compatibility
 pub fn spawn_workers<F>(num_workers: usize, work: F)
 where
     F: Fn() -> tokio::task::JoinHandle<()> + Send + Sync + 'static,
 {
     let work = Arc::new(work);
-    for _ in 0..num_workers {
+    for i in 0..num_workers {
         let work = work.clone();
         tokio::spawn(async move {
+            println!("Worker {} started", i);
             loop {
                 let handle = work();
                 handle.await.unwrap();

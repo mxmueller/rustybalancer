@@ -10,7 +10,7 @@ mod cache;
 
 use crate::http::start_http_server;
 use crate::socket::connect_socket;
-use crate::client::SharedClient;
+use crate::client::UnboundedClient;
 use crate::cache::SimpleCache;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
@@ -22,8 +22,8 @@ async fn main() {
 
     let shared_state = Arc::new(RwLock::new(None));
 
-    // Create SharedClient
-    let shared_client = SharedClient::new();
+    // Create UnboundedClient
+    let shared_client = UnboundedClient::new();
 
     let cache = Arc::new(SimpleCache::new(10000));
 

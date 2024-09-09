@@ -44,7 +44,7 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - redis
-    restart: unless-stopped
+    restart: always
 
   dashboard:
     build:
@@ -63,7 +63,7 @@ services:
       - redis
     networks:
       - rust-network
-    restart: unless-stopped
+    restart: always
 
   balancer:
     build:
@@ -86,7 +86,7 @@ services:
       - TARGET_PORT=${TARGET_PORT}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    restart: unless-stopped
+    restart: always
 
 networks:
   rust-network:

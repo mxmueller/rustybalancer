@@ -7,11 +7,10 @@ use tokio::sync::{RwLock, Mutex};
 use rand::distributions::{WeightedIndex, Distribution};
 use rand::Rng;
 use tokio::time::{interval, sleep, timeout};
-use log::{info, error, warn};
 
 use crate::queue::QueueItem;
 use crate::socket::SharedState;
-use crate::client::{SharedClient, spawn_workers};
+use crate::client::UnboundedClient;
 use crate::cache::SimpleCache;
 
 struct WeightedQueueItem {
@@ -27,6 +26,7 @@ struct DynamicWeightedBalancer {
 
 impl DynamicWeightedBalancer {
     fn new(queue_items: Vec<QueueItem>) -> Self {
+        println!("Initializing DynamicWeightedBalancer");
         let items = Arc::new(RwLock::new(
             queue_items
                 .into_iter()
@@ -47,7 +47,7 @@ impl DynamicWeightedBalancer {
 
     fn calculate_weight(score: f64) -> f64 {
         if score < 0.0 || score > 100.0 {
-            warn!("Invalid score: {}. Using default weight.", score);
+            println!("Warning: Invalid score: {}. Using default weight.", score);
             1.0 // default weight
         } else {
             score
@@ -57,27 +57,30 @@ impl DynamicWeightedBalancer {
     async fn update_weights(&self) {
         let mut last_update = self.last_update.lock().await;
         if last_update.elapsed() >= self.update_interval {
+            println!("Updating weights");
             let mut items = self.items.write().await;
             items.retain(|item| item.item.utilization_category != "SUNDOWN");
             for item in items.iter_mut() {
                 item.weight = Self::calculate_weight(item.item.score);
                 if item.weight == 0.0 {
-                    warn!("Item {} has a weight of 0 (score: {})", item.item.dns_name, item.item.score);
+                    println!("Warning: Item {} has a weight of 0 (score: {})", item.item.dns_name, item.item.score);
                 }
             }
             *last_update = Instant::now();
+            println!("Weights updated");
         }
     }
 
     async fn next(&self) -> Option<QueueItem> {
         let items = self.items.read().await;
         if items.is_empty() {
+            println!("Warning: No items available in the balancer");
             return None;
         }
 
         let weights: Vec<f64> = items.iter().map(|item| item.weight.max(f64::EPSILON)).collect();
         if weights.iter().all(|&w| w == 0.0) {
-            warn!("All weights are zero. Selecting a random item.");
+            println!("Warning: All weights are zero. Selecting a random item.");
             let index = rand::thread_rng().gen_range(0..items.len());
             return Some(items[index].item.clone());
         }
@@ -86,10 +89,10 @@ impl DynamicWeightedBalancer {
             Ok(dist) => {
                 let mut rng = rand::thread_rng();
                 let chosen_index = dist.sample(&mut rng);
-                Some(items[chosen_index].item.clone())
+                 Some(items[chosen_index].item.clone())
             },
             Err(e) => {
-                error!("Failed to create WeightedIndex: {}. Selecting a random item.", e);
+                println!("Error: Failed to create WeightedIndex: {}. Selecting a random item.", e);
                 let index = rand::thread_rng().gen_range(0..items.len());
                 Some(items[index].item.clone())
             }
@@ -110,10 +113,10 @@ impl DynamicWeightedBalancer {
 
     async fn print_queue(&self) {
         let items = self.items.read().await;
-        info!("Current Queue in Balancer:");
+        println!("Current Queue in Balancer:");
         for (index, weighted_item) in items.iter().enumerate() {
             let item = &weighted_item.item;
-            info!("  {}. {} (Score: {:.2}, Category: {}, Weight: {:.2})",
+            println!("  {}. {} (Score: {:.2}, Category: {}, Weight: {:.2})",
                      index + 1, item.dns_name, item.score, item.utilization_category, weighted_item.weight);
         }
     }
@@ -127,9 +130,10 @@ fn is_static_resource(path: &str) -> bool {
 async fn handle_request(
     req: Request<Body>,
     balancer: Arc<DynamicWeightedBalancer>,
-    shared_client: Arc<SharedClient>,
+    shared_client: Arc<UnboundedClient>,
     cache: Arc<SimpleCache>,
 ) -> Result<Response<Body>, hyper::Error> {
+    let start_time = Instant::now();
     let path = req.uri().path().to_string();
     let method = req.method().clone();
     let uri = req.uri().clone();
@@ -145,79 +149,48 @@ async fn handle_request(
     if let Some(item) = balancer.next().await {
         let port = env::var("TARGET_PORT").expect("TARGET_PORT must be set");
 
-        info!("Forwarding request to worker: {} (Score: {:.2}, Category: {})",
+        println!("Forwarding request to worker: {} (Score: {:.2}, Category: {})",
                  item.dns_name, item.score, item.utilization_category);
 
         let uri_string = format!("http://{}:{}{}", item.dns_name, port, uri.path());
         let new_uri: Uri = uri_string.parse().unwrap();
 
-        let mut retries = 0;
-        let max_retries = 3;
-        let mut delay = Duration::from_millis(100);
+        println!("Constructed new URI: {}", new_uri);
 
-        loop {
-            let req = Request::builder()
-                .method(method.clone())
-                .uri(new_uri.clone())
-                .body(Body::empty())
-                .unwrap();
+        let req = Request::builder()
+            .method(method.clone())
+            .uri(new_uri.clone())
+            .body(Body::empty())
+            .unwrap();
 
-            match shared_client.get().await {
-                Ok(client) => {
-                    match timeout(Duration::from_secs(30), client.request(req)).await {
-                        Ok(Ok(response)) => {
-                            if is_static && method == hyper::Method::GET && response.status().is_success() {
-                                let (parts, body) = response.into_parts();
-                                let body_bytes = hyper::body::to_bytes(body).await?;
+        match shared_client.request(req).await {
+            Ok(response) => {
+                let status = response.status();
+                println!("Received response from worker. Status: {}, Duration: {:?}", status, start_time.elapsed());
 
-                                let cache_key = uri.to_string();
-                                cache.set(cache_key, body_bytes.to_vec(), Duration::from_secs(3600)).await;
+                if is_static && method == hyper::Method::GET && status.is_success() {
+                    let (parts, body) = response.into_parts();
+                    let body_bytes = hyper::body::to_bytes(body).await?;
 
-                                return Ok(Response::from_parts(parts, Body::from(body_bytes)));
-                            } else {
-                                return Ok(response);
-                            }
-                        },
-                        Ok(Err(e)) => {
-                            error!("Request failed: {:?}", e);
-                            if retries >= max_retries {
-                                error!("Max retries reached");
-                                return Ok(Response::builder()
-                                    .status(503)
-                                    .body(Body::from("Service Unavailable"))
-                                    .unwrap());
-                            }
-                        },
-                        Err(_) => {
-                            error!("Request timed out");
-                            if retries >= max_retries {
-                                error!("Max retries reached");
-                                return Ok(Response::builder()
-                                    .status(504)
-                                    .body(Body::from("Gateway Timeout"))
-                                    .unwrap());
-                            }
-                        }
-                    }
-                },
-                Err(e) => {
-                    error!("Failed to get client: {:?}", e);
-                    if retries >= max_retries {
-                        error!("Max retries reached");
-                        return Ok(Response::builder()
-                            .status(503)
-                            .body(Body::from("Service Unavailable"))
-                            .unwrap());
-                    }
+                    let cache_key = uri.to_string();
+                    cache.set(cache_key.clone(), body_bytes.to_vec(), Duration::from_secs(3600)).await;
+                    println!("Cached static resource with key: {}", cache_key);
+
+                    Ok(Response::from_parts(parts, Body::from(body_bytes)))
+                } else {
+                    Ok(response)
                 }
+            },
+            Err(e) => {
+                println!("Error: Request to worker failed: {:?}", e);
+                Ok(Response::builder()
+                    .status(503)
+                    .body(Body::from("Service Unavailable"))
+                    .unwrap())
             }
-
-            retries += 1;
-            sleep(delay).await;
-            delay *= 2; // exponential backoff
         }
     } else {
-        warn!("No backend available");
+        println!("Error: No backend available");
         Ok(Response::builder()
             .status(503)
             .body(Body::from("No backend available"))
@@ -227,11 +200,12 @@ async fn handle_request(
 
 pub async fn start_http_server(
     shared_state: SharedState,
-    shared_client: Arc<SharedClient>,
+    shared_client: Arc<UnboundedClient>,
     cache: Arc<SimpleCache>
 ) -> Result<(), Box<dyn std::error::Error>> {
     let addr = ([0, 0, 0, 0], env::var("HOST_PORT_HTTP_BALANCER").unwrap().parse().unwrap()).into();
 
+    println!("Initializing balancer");
     let balancer = Arc::new(DynamicWeightedBalancer::new(vec![]));
 
     let make_svc = make_service_fn({
@@ -252,7 +226,7 @@ pub async fn start_http_server(
 
     let server = Server::bind(&addr).serve(make_svc);
 
-    info!("Listening on http://{}", addr);
+    println!("Listening on http://{}", addr);
 
     let balancer_for_update = balancer.clone();
     tokio::spawn(async move {
@@ -276,6 +250,7 @@ pub async fn start_http_server(
         }
     });
 
+    println!("Starting HTTP server");
     server.await?;
 
     Ok(())

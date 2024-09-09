@@ -15,6 +15,7 @@ use crate::db;
 use crate::queue::QueueItem;
 use std::time::Duration;
 use tokio::time::sleep;
+use std::time::Instant;
 
 pub fn generate_hash_based_key(app_identifier: &str, container_name: &str) -> String {
     let data = format!("{}:{}", app_identifier, container_name);
@@ -55,8 +56,10 @@ pub fn update_container_category(
     conn.hset(key, "category", category)
 }
 
+
 async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
-    println!("Pulling image: {}", image_name);
+    println!("Starting to pull image: {}", image_name);
+    let start_time = Instant::now();
     let create_image_options = CreateImageOptions {
         from_image: image_name,
         ..Default::default()
@@ -71,7 +74,32 @@ async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
 
         while let Some(pull_result) = stream.next().await {
             match pull_result {
-                Ok(output) => println!("Image pull progress: {:?}", output),
+                Ok(output) => {
+                    if let Some(status) = output.status {
+                        let elapsed = start_time.elapsed().as_secs();
+                        match status.as_str() {
+                            "Downloading" => {
+                                if let (Some(id), Some(progress_detail)) = (output.id, output.progress_detail) {
+                                    if let (Some(current), Some(total)) = (progress_detail.current, progress_detail.total) {
+                                        println!("[{}s] Downloading layer {}: {:.1}% ({}/{} bytes)",
+                                                 elapsed, &id[..12], (current as f64 / total as f64) * 100.0, current, total);
+                                    }
+                                }
+                            }
+                            "Extracting" => {
+                                if let Some(id) = output.id {
+                                    println!("[{}s] Extracting layer {}", elapsed, &id[..12]);
+                                }
+                            }
+                            "Download complete" | "Pull complete" => {
+                                if let Some(id) = output.id {
+                                    println!("[{}s] Layer {} completed", elapsed, &id[..12]);
+                                }
+                            }
+                            _ => println!("[{}s] Status: {}", elapsed, status),
+                        }
+                    }
+                }
                 Err(e) => {
                     println!("Error while pulling image: {:?}", e);
                     success = false;
@@ -81,7 +109,7 @@ async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
         }
 
         if success {
-            println!("Image pulled successfully: {}", image_name);
+            println!("Image pulled successfully: {} (took {}s)", image_name, start_time.elapsed().as_secs());
             return Ok(());
         }
 
@@ -96,6 +124,7 @@ async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
     println!("Max retries reached while pulling image: {}", image_name);
     Err(Error::IOError { err: std::io::Error::new(std::io::ErrorKind::Other, "Max retries reached while pulling image") })
 }
+
 
 pub async fn create_container(
     container_name: &str,
