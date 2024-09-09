@@ -7,9 +7,10 @@ deployment-agent/target/
 # The directory where Cargo puts all build artifacts and intermediate files.
 balancer/target/
 deployment-agent/target/
-tests/http-stress/target/
+/tests/http-stress/target/
 balancer/Cargo.lock
 deployment-agent/Cargo.lock
+target
 
 # Miscellaneous
 *.rs.bk
@@ -24,7 +25,7 @@ deployment-agent/Cargo.lock
 
 # IDEs and editors
 # Ignore project-specific settings files and directories
-.idea/
+.idea
 balancer/.idea/
 deployment-agent/.idea/
 balancer/.vscode/
