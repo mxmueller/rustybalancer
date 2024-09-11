@@ -1,7 +1,6 @@
 use redis::{Commands, Connection};
 use std::env;
 use dotenv::dotenv;
-use crate::stats::ContainerStatus;
 
 pub fn get_redis_connection() -> Connection {
     dotenv().ok();

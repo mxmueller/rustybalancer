@@ -45,6 +45,7 @@ impl DynamicWeightedBalancer {
         }
     }
 
+    // Weight based on the score
     fn calculate_weight(score: f64) -> f64 {
         if score < 0.0 || score > 100.0 {
             println!("Warning: Invalid score: {}. Using default weight.", score);
@@ -71,6 +72,7 @@ impl DynamicWeightedBalancer {
         }
     }
 
+    // Chooses next QueueItem based on its weight
     async fn next(&self) -> Option<QueueItem> {
         let items = self.items.read().await;
         if items.is_empty() {
@@ -99,6 +101,7 @@ impl DynamicWeightedBalancer {
         }
     }
 
+    // Updates the queue with new QueueItems
     async fn set_queue_items(&self, queue_items: Vec<QueueItem>) {
         let mut items = self.items.write().await;
         *items = queue_items
@@ -122,6 +125,7 @@ impl DynamicWeightedBalancer {
     }
 }
 
+// Checking if resource is static (pictures, CSS,...)
 fn is_static_resource(path: &str) -> bool {
     let static_extensions = [".jpg", ".jpeg", ".png", ".gif", ".css", ".js"];
     static_extensions.iter().any(|ext| path.ends_with(ext))
@@ -198,6 +202,7 @@ async fn handle_request(
     }
 }
 
+// Starts http-Server and initializes the load balancer
 pub async fn start_http_server(
     shared_state: SharedState,
     shared_client: Arc<UnboundedClient>,
@@ -208,6 +213,7 @@ pub async fn start_http_server(
     println!("Initializing balancer");
     let balancer = Arc::new(DynamicWeightedBalancer::new(vec![]));
 
+    // For every incoming request, the handle_request function is called (with a Service-Factory)
     let make_svc = make_service_fn({
         let balancer = balancer.clone();
         let client = shared_client.clone();
@@ -228,6 +234,7 @@ pub async fn start_http_server(
 
     println!("Listening on http://{}", addr);
 
+    // Background task to update balancer
     let balancer_for_update = balancer.clone();
     tokio::spawn(async move {
         let mut interval = interval(Duration::from_millis(100));

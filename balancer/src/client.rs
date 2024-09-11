@@ -1,12 +1,11 @@
 use std::sync::Arc;
 use std::fmt;
+use std::env;
+use dotenv::dotenv;
 use hyper::{Client, client::HttpConnector, Request, Response, Body};
 use hyper_tls::HttpsConnector;
 use tokio::sync::mpsc;
 use tokio::time::{timeout, Duration};
-use futures::future::join_all;
-
-const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 pub enum ClientError {
@@ -50,11 +49,13 @@ impl UnboundedClient {
 
         let (request_sender, mut request_receiver) = mpsc::channel::<QueuedRequest>(100_000);
 
+        // Background task to handle requests
         let client_clone = client.clone();
         tokio::spawn(async move {
             while let Some(queued_request) = request_receiver.recv().await {
                 let client = client_clone.clone();
                 tokio::spawn(async move {
+                    // handling of request
                     let result = client.request(queued_request.request).await
                         .map_err(ClientError::from);
                     match &result {
@@ -74,18 +75,28 @@ impl UnboundedClient {
         })
     }
 
+    // Sends request and waits for an answer with a timer
     pub async fn request(&self, request: Request<Body>) -> Result<Response<Body>, ClientError> {
+        dotenv().ok();
         let (response_sender, mut response_receiver) = mpsc::channel(1);
         let queued_request = QueuedRequest {
             request,
             response_sender,
         };
 
+        let request_timeout = Duration::from_secs(
+            env::var("REQUEST_TIMEOUT")
+            .expect("REQUEST_TIMEOUT must be set")
+            .parse::<u64>()
+            .expect("REQUEST_TIMEOUT must be a valid u64")
+        );
+
+
         if let Err(e) = self.request_sender.send(queued_request).await {
             println!("Failed to queue request: {}", e);
             return Err(ClientError::RequestCanceled);
         }
-        match timeout(REQUEST_TIMEOUT, response_receiver.recv()).await {
+        match timeout(request_timeout, response_receiver.recv()).await {
             Ok(Some(result)) => {
                 println!("Received response within timeout");
                 result
@@ -102,7 +113,7 @@ impl UnboundedClient {
     }
 }
 
-// Keep this function for compatibility
+// Keep this function for compatibility (helper function)
 pub fn spawn_workers<F>(num_workers: usize, work: F)
 where
     F: Fn() -> tokio::task::JoinHandle<()> + Send + Sync + 'static,

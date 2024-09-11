@@ -8,19 +8,11 @@ use futures::stream::StreamExt;
 use std::time::{Duration, Instant};
 use tokio::time;
 use std::sync::Arc;
+use dotenv::dotenv;
 use tokio::sync::Mutex;
 use lazy_static::lazy_static;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
-
-const WC: f64 = 0.35;  // Weight for CPU
-const WM: f64 = 0.25; // Weight for Memory
-const WN: f64 = 0.15; // Weight for Network
-const WA: f64 = 0.25;  // Weight for Availability
-
-const HISTORY_SIZE: usize = 20;
-const BEST_TIME_WINDOW: usize = 10;
-const EMA_ALPHA: f64 = 0.2; // Exponential Moving Average smoothing factor
 
 #[derive(Serialize, Clone, Debug)]
 pub struct ContainerStatus {
@@ -44,22 +36,45 @@ struct ResponseTimeMetrics {
 
 impl ResponseTimeMetrics {
     fn new() -> Self {
+        dotenv().ok();
+        let history_size = env::var("HISTORY_SIZE")
+            .expect("HISTORY_SIZE must be set")
+            .parse::<usize>()
+            .expect("HISTORY_SIZE must be a valid usize");
+        let best_time_window = env::var("BEST_TIME_WINDOW")
+            .expect("BEST_TIME_WINDOW must be set")
+            .parse::<usize>()
+            .expect("BEST_TIME_WINDOW must be a valid usize");
+
         ResponseTimeMetrics {
-            history: VecDeque::with_capacity(HISTORY_SIZE),
-            best_times: VecDeque::with_capacity(BEST_TIME_WINDOW),
+            history: VecDeque::with_capacity(history_size),
+            best_times: VecDeque::with_capacity(best_time_window),
             ema_score: 100.0,
             dynamic_threshold: 1.0,
         }
     }
 
+    // Adding new response time and adjusts threshold
     fn add_measurement(&mut self, response_time: f64) {
-        if self.history.len() >= HISTORY_SIZE {
+        dotenv().ok();
+        let history_size = env::var("HISTORY_SIZE")
+            .expect("HISTORY_SIZE must be set")
+            .parse::<usize>()
+            .expect("HISTORY_SIZE must be a valid usize");
+
+        let best_time_window = env::var("BEST_TIME_WINDOW")
+            .expect("BEST_TIME_WINDOW must be set")
+            .parse::<usize>()
+            .expect("BEST_TIME_WINDOW must be a valid usize");
+
+        if self.history.len() >= history_size {
             self.history.pop_front();
         }
         self.history.push_back(response_time);
 
+        // Adding to list of best response times
         if self.best_times.is_empty() || response_time < *self.best_times.back().unwrap() {
-            if self.best_times.len() >= BEST_TIME_WINDOW {
+            if self.best_times.len() >= best_time_window {
                 self.best_times.pop_front();
             }
             self.best_times.push_back(response_time);
@@ -80,6 +95,7 @@ impl ResponseTimeMetrics {
         self.history.iter().sum::<f64>() / self.history.len() as f64
     }
 
+    // Calculates trend of last 10 measurements
     fn calculate_trend(&self) -> f64 {
         if self.history.len() < 2 {
             return 0.0;
@@ -89,7 +105,9 @@ impl ResponseTimeMetrics {
         (older - recent) / older
     }
 
+    // Availability score based on response time, trend and threshold
     fn calculate_availability_score(&mut self) -> f64 {
+        dotenv().ok();
         if self.history.is_empty() {
             return 100.0;
         }
@@ -99,10 +117,12 @@ impl ResponseTimeMetrics {
         let best_time = self.get_best_time();
         let trend = self.calculate_trend();
 
+        // effective time based on current and average response time
         let effective_time = 0.3 * current_time + 0.7 * avg_time;
         let ratio = effective_time / best_time;
         let base_score = 100.0 * (1.0 / ratio).powf(1.5);
 
+        // Penalty if threshold is passed
         let penalty = if effective_time > self.dynamic_threshold {
             let over_threshold = effective_time - self.dynamic_threshold;
             20.0 * (1.0 - (-over_threshold).exp())
@@ -114,7 +134,12 @@ impl ResponseTimeMetrics {
 
         let raw_score = (base_score - penalty + trend_adjustment).max(0.0).min(100.0);
 
-        self.ema_score = EMA_ALPHA * raw_score + (1.0 - EMA_ALPHA) * self.ema_score;
+        let ema_alpha = env::var("EMA_ALPHA")
+            .expect("EMA_ALPHA must be set")
+            .parse::<f64>()
+            .expect("EMA_ALPHA must be a valid f64");
+
+        self.ema_score = ema_alpha * raw_score + (1.0 - ema_alpha) * self.ema_score;
 
         self.ema_score
     }
@@ -125,6 +150,7 @@ lazy_static! {
     static ref RESPONSE_TIME_METRICS: Arc<Mutex<HashMap<String, ResponseTimeMetrics>>> = Arc::new(Mutex::new(HashMap::new()));
 }
 
+// Calculates values based on the states of the containers
 pub async fn get_container_statuses() -> Result<Vec<ContainerStatus>, Error> {
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");
 
@@ -144,6 +170,7 @@ pub async fn get_container_statuses() -> Result<Vec<ContainerStatus>, Error> {
 
     let containers = docker.list_containers(Some(options)).await?;
 
+    // Asynchronous tasks for the containers
     let futures: Vec<_> = containers.into_iter().filter_map(|container| {
         container.id.map(|id| {
             let docker = docker.clone();
@@ -187,6 +214,7 @@ async fn get_single_container_status(docker: &Docker, container_id: &str, contai
     let overall_score = calculate_score(cpu_score, memory_score, network_score, availability_score);
     let utilization_category = categorize_utilization(overall_score);
 
+    // Sets container status
     Ok(ContainerStatus {
         id: container_id.to_string(),
         name: container_name,
@@ -217,17 +245,21 @@ fn calculate_memory_usage(stats: &bollard::container::Stats) -> f64 {
     (usage / limit) * 100.0
 }
 
+// Network usage within a specific timespan
 async fn calculate_network_usage(container_id: &str, stats1: &bollard::container::Stats, stats2: &bollard::container::Stats, duration: Duration) -> f64 {
     let duration_secs = duration.as_secs_f64();
 
+    // Received and transmitted bytes at 2 timestamps
     let rx_bytes1: u64 = stats1.networks.as_ref().map(|n| n.values().map(|i| i.rx_bytes).sum()).unwrap_or(0);
     let tx_bytes1: u64 = stats1.networks.as_ref().map(|n| n.values().map(|i| i.tx_bytes).sum()).unwrap_or(0);
     let rx_bytes2: u64 = stats2.networks.as_ref().map(|n| n.values().map(|i| i.rx_bytes).sum()).unwrap_or(0);
     let tx_bytes2: u64 = stats2.networks.as_ref().map(|n| n.values().map(|i| i.tx_bytes).sum()).unwrap_or(0);
 
+    // Amount of bytes within the timespan
     let total_bytes = (rx_bytes2.saturating_sub(rx_bytes1) + tx_bytes2.saturating_sub(tx_bytes1)) as f64;
     let mb_per_second = total_bytes / duration_secs / 1_000_000.0;
 
+    // Adjusts network usage by adding new value to the old one
     let mut network_usage = NETWORK_USAGE.lock().await;
     let prev_usage = network_usage.entry(container_id.to_string()).or_insert(0.0);
     let usage_percent = if *prev_usage > 0.0 {
@@ -241,13 +273,36 @@ async fn calculate_network_usage(container_id: &str, stats1: &bollard::container
 }
 
 fn calculate_score(cpu_score: f64, memory_score: f64, network_score: f64, availability_score: f64) -> f64 {
-    let score = WC * cpu_score +
-        WM * memory_score +
-        WN * network_score +
-        WA * availability_score;
+    dotenv().ok();
+
+    let wc = env::var("CPU_WEIGHT")
+        .expect("CPU_WEIGHT must be set")
+        .parse::<f64>()
+        .expect("CPU_WEIGHT must be a valid f64");
+
+    let wm = env::var("MEMORY_WEIGHT")
+        .expect("MEMORY_WEIGHT must be set")
+        .parse::<f64>()
+        .expect("MEMORY_WEIGHT must be a valid f64");
+
+    let wn = env::var("NETWORK_WEIGHT")
+        .expect("NETWORK_WEIGHT must be set")
+        .parse::<f64>()
+        .expect("NETWORK_WEIGHT must be a valid f64");
+
+    let wa = env::var("AVAILABILITY_WEIGHT")
+        .expect("AVAILABILITY_WEIGHT must be set")
+        .parse::<f64>()
+        .expect("AVAILABILITY_WEIGHT must be a valid f64");
+
+    let score = wc * cpu_score +
+        wm * memory_score +
+        wn * network_score +
+        wa * availability_score;
     score.min(100.0).max(0.0)
 }
 
+// Categorizes Usage with High, Medium and Low
 fn categorize_utilization(score: f64) -> String {
     match score {
         s if s >= 70.0 => "LU",   // Low Utilization (Good performance)
@@ -256,6 +311,7 @@ fn categorize_utilization(score: f64) -> String {
     }.to_string()
 }
 
+// Checks Availability based on response time
 async fn check_container_availability(docker: &Docker, container_id: &str) -> f64 {
     let response_time = get_container_response_time(docker, container_id).await;
     calculate_availability_score(container_id, response_time).await
@@ -275,6 +331,7 @@ async fn get_container_response_time(docker: &Docker, container_id: &str) -> Opt
                                     let port = container_port.split('/').next().unwrap_or("5000");
                                     let addr = format!("{}:{}", ip_address, port);
 
+                                    // Measures time needed to get tcp-connection to container
                                     let start = Instant::now();
                                     match timeout(Duration::from_secs(5), TcpStream::connect(&addr)).await {
                                         Ok(Ok(_)) => {
@@ -289,7 +346,7 @@ async fn get_container_response_time(docker: &Docker, container_id: &str) -> Opt
                     }
                 }
             }
-            None
+            None // No response time could be calculated
         },
         Err(_) => None,
     }

@@ -24,6 +24,7 @@ pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std
     let mut retry_delay = Duration::from_secs(1);
     let max_retry_delay = Duration::from_secs(60);
 
+    // Main loop for websocket connection and messages
     loop {
         info!("Attempting to connect to WebSocket at {}", url);
         match connect_async(url).await {
@@ -31,6 +32,7 @@ pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std
                 info!("Connected to the WebSocket");
                 retry_delay = Duration::from_secs(1);  // Reset retry delay on successful connection
 
+                // Incoming websocket messages
                 while let Some(msg) = ws_stream.next().await {
                     match msg {
                         Ok(Message::Text(text)) => {
@@ -54,7 +56,7 @@ pub async fn connect_socket(shared_state: SharedState) -> Result<(), Box<dyn std
                         Ok(_) => warn!("Received non-text message from WebSocket"),
                         Err(e) => {
                             error!("Error receiving message: {}. Reconnecting...", e);
-                            break;
+                            break; // retrying connection
                         }
                     }
                 }

@@ -2,7 +2,6 @@ use bollard::Docker;
 use bollard::container::{Config, CreateContainerOptions, ListContainersOptions, StartContainerOptions, StopContainerOptions, RemoveContainerOptions};
 use bollard::models::{HostConfig, PortBinding, ContainerSummary as APIContainers};
 use bollard::errors::Error;
-use dotenv::dotenv;
 use std::collections::HashMap;
 use std::env;
 use rand::Rng;

@@ -1,5 +1,4 @@
 use std::env;
-use std::sync::Arc;
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     response::IntoResponse,
@@ -10,8 +9,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
-use crate::queue::{SharedQueue, build_queue};
+use crate::queue::{build_queue};
 
 pub async fn socket() {
     dotenv().ok();
@@ -46,16 +44,16 @@ async fn handle_socket(mut socket: WebSocket) {
     println!("WebSocket connection established");
 
     loop {
-        // Hole die aktuelle Queue
+        // Gets current queue
         match build_queue().await {
             Ok(shared_queue) => {
                 let locked_queue = shared_queue.lock().await;
                 let queue_string = serde_json::to_string(&*locked_queue).expect("Failed to serialize queue");
 
-                // Sende die serialisierte Queue
+                // Sends serialized queue with the websocket
                 if let Err(e) = socket.send(Message::Text(queue_string.clone())).await {
                     eprintln!("Error sending message: {}", e);
-                    // Breche die Schleife ab, falls ein Fehler auftritt
+                    // Breaks loop, if an error occurred
                     break;
                 }
             }
@@ -65,7 +63,7 @@ async fn handle_socket(mut socket: WebSocket) {
             }
         }
 
-        // Warte vor dem Senden des nächsten Updates
+        // Waits 2 secs before sending update
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
 

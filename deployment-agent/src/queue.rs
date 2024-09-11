@@ -9,19 +9,12 @@ use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::future::Future;
 use bollard::errors::Error as BollardError;
-use redis::{Commands, RedisResult};
+use redis::{Commands};
 use std::time::{Duration, Instant};
+use dotenv::dotenv;
 use futures_util::SinkExt;
 use once_cell::sync::Lazy;
 use tabled::{Style, Table, Tabled};
-
-const HIGH_LOAD_THRESHOLD: f64 = 55.0;
-const CRITICAL_LOAD_THRESHOLD: f64 = 20.0;
-const LOW_LOAD_THRESHOLD: f64 = 80.0;
-const MAX_CONTAINERS: usize = 15;
-const COOLDOWN_PERIOD: Duration = Duration::from_secs(5);
-const SCALE_STEP: usize = 1;
-const SCALE_CHECK_PERIOD: Duration = Duration::from_secs(10);
 
 static GLOBAL_COOLDOWN: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
 static LAST_SCALE_CHECK: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
@@ -74,12 +67,13 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
               .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
           println!("Found {} container entries in database", db_containers.len());
 
-          // Erstellen Sie einen HashSet der laufenden Container-Schlüssel
+          // Creates HashSet for running containers' keys
           let running_container_keys: HashSet<String> = running_containers.iter()
               .filter_map(|c| c.names.as_ref().and_then(|names| names.first()))
               .map(|name| generate_hash_based_key(&app_identifier, name.trim_start_matches('/')))
               .collect();
 
+          // Removing containers that are not running anymore
           for db_container in db_containers {
                if !running_container_keys.contains(&db_container) {
                     println!("Container with key {} is in the database but not running. Removing from database.", db_container);
@@ -90,6 +84,7 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                }
           }
 
+          // Starting new containers if required
           let running_count = running_containers.len() as i16;
           println!("Current running containers: {}, Default containers: {}", running_count, default_container);
           if running_count < default_container {
@@ -113,6 +108,7 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                }
           }
 
+          // Handling containers and updating container status
           println!("Managing containers");
           match manage_containers(&app_identifier, default_container).await {
                Ok(mut managed_containers) => {
@@ -131,6 +127,7 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                                                   managed_container.score = status.overall_score;
                                                   managed_container.utilization_category = status.utilization_category.clone();
 
+                                                  // Updating database with new scores and categories for the containers
                                                   if let Err(e) = conn.hset::<_, _, _, ()>(&key, "score", managed_container.score.to_string()) {
                                                        eprintln!("Failed to update score in database for {}: {:?}", managed_container.dns_name, e);
                                                   }
@@ -151,6 +148,7 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
                                    }
                               }
 
+                              // Removing inactive SUNDOWN containers
                               println!("Removing inactive SUNDOWN containers");
                               managed_containers = remove_inactive_sundown_containers(&app_identifier, managed_containers, &container_statuses).await;
 
@@ -178,6 +176,7 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
 
                               print_final_queue(&locked_queue);
 
+                              // If Queue is empty, starting rebuild
                               if locked_queue.is_empty() {
                                    println!("Queue is empty after rebuild. Triggering immediate rebuild...");
                                    drop(locked_queue);
@@ -200,6 +199,8 @@ pub fn build_queue() -> Pin<Box<dyn Future<Output = Result<SharedQueue, axum::ht
           Ok(shared_queue)
      })
 }
+
+// Prints queue as table
 fn print_final_queue(queue: &VecDeque<QueueItem>) {
      let mut table = Table::new(queue);
      table.with(Style::modern());
@@ -249,30 +250,49 @@ async fn remove_inactive_sundown_containers(app_identifier: &str, containers: Ve
      active_containers
 }
 
-async fn check_and_scale_containers(
+// Scaling containers based on load
+pub async fn check_and_scale_containers(
      conn: &mut redis::Connection,
      app_identifier: &str,
      container_statuses: &[ContainerStatus],
      managed_containers: &mut [QueueItem],
 ) -> Result<(), BollardError> {
      println!("DEBUG: Entering check_and_scale_containers");
+
+     // Filters out containers not in SUNDOWN state
      let active_containers: Vec<_> = managed_containers.iter()
          .filter(|c| c.utilization_category != "SUNDOWN")
          .collect();
 
      let active_container_count = active_containers.len();
+     // Calculates average container load
      let average_load = active_containers.iter()
          .map(|c| c.score)
          .sum::<f64>() / active_container_count as f64;
 
+     dotenv().ok();
+     println!("DEBUG: CRITICAL_LOAD_THRESHOLD = {:?}", env::var("CRITICAL_LOAD_THRESHOLD"));
+
+     let critical_load_threshold = env::var("CRITICAL_LOAD_THRESHOLD")
+         .expect("CRITICAL_LOAD_THRESHOLD must be set")
+         .parse::<f64>()
+         .expect("CRITICAL_LOAD_THRESHOLD must be a valid f64");
+
      let has_critically_loaded_container = active_containers.iter()
-         .any(|c| c.score < CRITICAL_LOAD_THRESHOLD);
+         .any(|c| c.score < critical_load_threshold);
 
      println!("DEBUG: Active containers: {}, Average load: {:.2}, Has critically loaded container: {}",
               active_container_count, average_load, has_critically_loaded_container);
 
-     let cooldown_status = get_cooldown_status().await;
-     let can_scale = can_scale().await;
+     let cooldown_period = Duration::from_secs(
+          env::var("COOLDOWN_PERIOD")
+              .expect("COOLDOWN_PERIOD must be set")
+              .parse::<u64>()
+              .expect("COOLDOWN_PERIOD must be a valid u64")
+     );
+
+     let cooldown_status = get_cooldown_status(cooldown_period).await;
+     let can_scale = can_scale(cooldown_period).await;
 
      let env_default_container: i16 = env::var("DEFAULT_CONTAINER")
          .unwrap_or_else(|_| "1".to_string())
@@ -282,16 +302,48 @@ async fn check_and_scale_containers(
      println!("Current conditions: Average load: {}, Active container count: {}, Has critically loaded container: {}, Cooldown: {}",
               average_load, active_container_count, has_critically_loaded_container, cooldown_status);
 
+     let scale_check_period = Duration::from_secs(
+          env::var("SCALE_CHECK_PERIOD")
+              .expect("SCALE_CHECK_PERIOD must be set")
+              .parse::<u64>()
+              .expect("SCALE_CHECK_PERIOD must be a valid u64")
+     );
+
+
+     // Gets time of last scaling check and resets that time
      let mut last_check = LAST_SCALE_CHECK.lock().await;
-     if last_check.elapsed() >= SCALE_CHECK_PERIOD {
+     if last_check.elapsed() >= scale_check_period {
           *last_check = Instant::now();
+
+          // Scale check (see if containers have to be scaled up/down)
+          let high_load_threshold = env::var("HIGH_LOAD_THRESHOLD")
+              .expect("HIGH_LOAD_THRESHOLD must be set")
+              .parse::<f64>()
+              .expect("HIGH_LOAD_THRESHOLD must be a valid f64");
+
+          let low_load_threshold = env::var("LOW_LOAD_THRESHOLD")
+              .expect("LOW_LOAD_THRESHOLD must be set")
+              .parse::<f64>()
+              .expect("LOW_LOAD_THRESHOLD must be a valid f64");
+
+          let max_containers = env::var("MAX_CONTAINERS")
+              .expect("MAX_CONTAINERS must be set")
+              .parse::<usize>()
+              .expect("MAX_CONTAINERS must be a valid usize");
+
+          let scale_step = env::var("SCALE_STEP")
+              .expect("SCALE_STEP must be set")
+              .parse::<usize>()
+              .expect("SCALE_STEP must be a valid usize");
+
           println!("Performing scale check...");
+          if active_container_count >= max_containers {
+               println!("Max container limit ({}) reached. Cannot scale up further.", max_containers);
+          } else if can_scale && (average_load < high_load_threshold || has_critically_loaded_container) {
+               // Calculates amount of containers to add
+               let containers_to_add = std::cmp::min(scale_step, max_containers - active_container_count);
 
-          if active_container_count >= MAX_CONTAINERS {
-               println!("Max container limit ({}) reached. Cannot scale up further.", MAX_CONTAINERS);
-          } else if can_scale && (average_load < HIGH_LOAD_THRESHOLD || has_critically_loaded_container) {
-               let containers_to_add = std::cmp::min(SCALE_STEP, MAX_CONTAINERS - active_container_count);
-
+               // Loop to add containers
                for _ in 0..containers_to_add {
                     let current_default: i16 = conn.get("DEFAULT_CONTAINER").unwrap_or(env_default_container);
                     let new_default = current_default + 1;
@@ -321,13 +373,14 @@ async fn check_and_scale_containers(
                }
 
                update_cooldown().await;
-               println!("Cooldown period activated. Next scaling possible after {:?}", COOLDOWN_PERIOD);
+               println!("Cooldown period activated. Next scaling possible after {:?}", cooldown_period);
                println!("Added {} new container(s). New active container count: {}", containers_to_add, active_container_count + containers_to_add);
-          } else if average_load > LOW_LOAD_THRESHOLD && active_container_count > env_default_container as usize {
+          } else if average_load > low_load_threshold && active_container_count > env_default_container as usize {
                let current_default: i16 = conn.get("DEFAULT_CONTAINER").unwrap_or(env_default_container);
 
+               // Calculates amount of containers to remove
                let containers_to_remove = std::cmp::min(
-                    SCALE_STEP,
+                    scale_step,
                     std::cmp::min(
                          active_container_count - env_default_container as usize,
                          (current_default - env_default_container) as usize
@@ -338,8 +391,10 @@ async fn check_and_scale_containers(
                     let mut containers_to_sundown: Vec<_> = managed_containers.iter_mut()
                         .filter(|c| c.utilization_category != "SUNDOWN" && c.utilization_category != "INIT")
                         .collect();
-                    containers_to_sundown.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
+                    // Sort containers by their score
+                    containers_to_sundown.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+                    //Mark containers to be put into SUNDOWN state
                     for container in containers_to_sundown.iter_mut().take(containers_to_remove) {
                          let key = generate_hash_based_key(app_identifier, &container.dns_name);
                          if let Err(e) = update_container_category(conn, &key, "SUNDOWN") {
@@ -365,16 +420,17 @@ async fn check_and_scale_containers(
                println!("Current conditions do not require scaling.");
           }
      } else {
-          println!("Skipping scale check. Next check in {:?}", SCALE_CHECK_PERIOD.checked_sub(last_check.elapsed()).unwrap_or(Duration::from_secs(0)));
+          // If not enough time has passed since the last check, skip the scale check
+          println!("Skipping scale check. Next check in {:?}", scale_check_period.checked_sub(last_check.elapsed()).unwrap_or(Duration::from_secs(0)));
      }
 
      println!("DEBUG: Exiting check_and_scale_containers");
      Ok(())
 }
 
-async fn can_scale() -> bool {
+async fn can_scale(cooldown_period: Duration) -> bool {
      let cooldown = GLOBAL_COOLDOWN.lock().await;
-     cooldown.elapsed() >= COOLDOWN_PERIOD
+     cooldown.elapsed() >= cooldown_period
 }
 
 async fn update_cooldown() {
@@ -382,12 +438,12 @@ async fn update_cooldown() {
      *cooldown = Instant::now();
 }
 
-async fn get_cooldown_status() -> String {
+async fn get_cooldown_status(cooldown_period: Duration) -> String {
      let cooldown = GLOBAL_COOLDOWN.lock().await;
      let elapsed = cooldown.elapsed();
-     if elapsed >= COOLDOWN_PERIOD {
+     if elapsed >= cooldown_period {
           "inactive".to_string()
      } else {
-          format!("active, next scaling possible in {:?}", COOLDOWN_PERIOD.checked_sub(elapsed).unwrap_or(Duration::from_secs(0)))
+          format!("active, next scaling possible in {:?}", cooldown_period.checked_sub(elapsed).unwrap_or(Duration::from_secs(0)))
      }
 }

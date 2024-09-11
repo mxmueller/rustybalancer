@@ -14,6 +14,7 @@ mod db;
 async fn main() -> Result<(), Error> {
     dotenv().ok();
 
+    // Initialize db connection
     let mut conn = db::get_redis_connection();
     db::init(&mut conn);
 

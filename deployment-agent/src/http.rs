@@ -10,6 +10,7 @@ use tower_http::cors::{Any, CorsLayer};
 use crate::stats::{get_container_statuses, ContainerStatus};
 
 pub async fn start_http_server() {
+    // Creates a new axum-router with CORS configuration
     let app = Router::new()
         .route("/stats", get(get_stats))
         .layer(

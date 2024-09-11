@@ -1,4 +1,6 @@
+use std::env;
 use std::sync::Arc;
+use dotenv::dotenv;
 use tokio::sync::RwLock;
 use log::info;
 
@@ -20,11 +22,13 @@ async fn main() {
 
     info!("Starting load balancer");
 
+    // Shared State for the communication between components
     let shared_state = Arc::new(RwLock::new(None));
 
-    // Create UnboundedClient
+    // Create UnboundedClient (for outgoing requests)
     let shared_client = UnboundedClient::new();
 
+    // Cache for static resources
     let cache = Arc::new(SimpleCache::new(10000));
 
     let ws_state = shared_state.clone();
