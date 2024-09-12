@@ -1,0 +1,37 @@
+\documentclass{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.15}
+
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+    width=12cm,
+    height=8cm,
+    xlabel={Zeit},
+    ylabel={Auslastung (\%)},
+    xmin=0, xmax=33.5,
+    ymin=0, ymax=60,
+    xtick distance=5,
+    ytick distance=10,
+    grid=major,
+    legend pos=north west,
+    legend cell align={left},
+    legend style={font=\footnotesize},
+    cycle list name=color list,
+]
+
+\addplot[thick] table[x index=0, y index=1, col sep=tab] {data.txt};
+\addlegendentry{Worker 1}
+
+\addplot[thick] table[x index=0, y index=2, col sep=tab] {data.txt};
+\addlegendentry{Worker 2}
+
+\addplot[thick] table[x index=0, y index=3, col sep=tab] {data.txt};
+\addlegendentry{Worker 3}
+
+\addplot[thick] table[x index=0, y index=4, col sep=tab] {data.txt};
+\addlegendentry{Worker 4}
+
+\end{axis}
+\end{tikzpicture}
+\end{document}

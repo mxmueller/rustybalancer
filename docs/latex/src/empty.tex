@@ -1,0 +1,137 @@
+%%%%%%%%%%%%%%%%%%%%%%% file template.tex %%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This is a template file for Web of Conferences Journal
+%
+% Copy it to a new file with a new name and use it as the basis
+% for your article
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%% EDP Science %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%%\documentclass[option]{webofc}
+%%% "twocolumn" for typesetting an article in two columns format (default one column)
+%
+\documentclass[twocolumn]{webofc}
+\usepackage[varg]{txfonts}   % Web of Conferences font
+\graphicspath{{graphics/}{graphics/arch/}{Graphics/}{./}} % Look in these folders for graphics
+%
+%
+% Put here some packages required or/and some personnal commands
+%
+%
+\begin{document}
+%
+\title{Insert your title here}
+%
+% subtitle is optionnal
+%
+%%%\subtitle{Do you have a subtitle?\\ If so, write it here}
+
+\author{\firstname{First author} \lastname{First author}\inst{1,3}\fnsep\thanks{\email{Mail address for first
+    author}} \and
+        \firstname{Second author} \lastname{Second author}\inst{2}\fnsep\thanks{\email{Mail address for second
+             author if necessary}} \and
+        \firstname{Third author} \lastname{Third author}\inst{3}\fnsep\thanks{\email{Mail address for last
+             author if necessary}}
+        % etc.
+}
+
+\institute{Insert the first address here 
+\and
+           the second here 
+\and
+           Last address
+          }
+
+\abstract{%
+  Insert your english abstract here.
+}
+%
+\maketitle
+%
+\section{Introduction}
+\label{intro}
+Your text comes here. Separate text sections with
+\section{Section title}
+\label{sec-1}
+For bibliography use \cite{RefJ}
+\subsection{Subsection title}
+\label{sec-2}
+Don't forget to give each section, subsection, subsubsection, and
+paragraph a unique label (see Sect.~\ref{sec-1}).
+
+For one-column wide figures use syntax of figure~\ref{fig-1}
+\begin{figure}[h]
+% Use the relevant command for your figure-insertion program
+% to insert the figure file.
+\centering
+\includegraphics[width=1cm,clip]{tiger}
+\caption{Please write your figure caption here}
+\label{fig-1}       % Give a unique label
+\end{figure}
+
+For two-column wide figures use syntax of figure~\ref{fig-2}
+\begin{figure*}
+\centering
+% Use the relevant command for your figure-insertion program
+% to insert the figure file. See example above.
+% If not, use
+\vspace*{5cm}       % Give the correct figure height in cm
+\includegraphics[width=\columnwidth,clip]{tiger}
+\caption{Please write your figure caption here}
+\label{fig-2}       % Give a unique label
+\end{figure*}
+
+For figure with sidecaption legend use syntax of figure
+\begin{figure}
+% Use the relevant command for your figure-insertion program
+% to insert the figure file.
+\centering
+\sidecaption
+\includegraphics[width=5cm,clip]{tiger}
+\caption{Please write your figure caption here}
+\label{fig-3}       % Give a unique label
+\end{figure}
+
+For tables use syntax in table~\ref{tab-1}.
+\begin{table}
+\centering
+\caption{Please write your table caption here}
+\label{tab-1}       % Give a unique label
+% For LaTeX tables you can use
+\begin{tabular}{lll}
+\hline
+first & second & third  \\\hline
+number & number & number \\
+number & number & number \\\hline
+\end{tabular}
+% Or use
+\vspace*{5cm}  % with the correct table height
+\end{table}
+%
+% BibTeX or Biber users please use (the style is already called in the class, ensure that the "woc.bst" style is in your local directory)
+% \bibliography{name or your bibliography database}
+%
+% Non-BibTeX users please use
+%
+\begin{thebibliography}{}
+%
+% and use \bibitem to create references.
+%
+\bibitem{RefJ}
+% Format for Journal Reference
+Journal Author, Journal \textbf{Volume}, page numbers (year)
+% Format for books
+\bibitem{RefB}
+Book Author, \textit{Book title} (Publisher, place, year) page numbers
+% etc
+\end{thebibliography}
+
+\end{document}
+
+% end of file template.tex
+
+<div id='footer'><table width='100%'><tr><td class='right'><a href='http://fusioninventory.org/'><span class='copyright'>FusionInventory 9.1+1.0 | copyleft <img src='/glpi/plugins/fusioninventory/pics/copyleft.png'/>  2010-2016 by FusionInventory Team</span></a></td></tr></table></div>
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
