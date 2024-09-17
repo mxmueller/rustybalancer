@@ -36,7 +36,6 @@ services:
       - APP_IDENTIFIER=${APP_IDENTIFIER}
       - HOST_PORT_WS_DEPLOYMENT_AGENT=${HOST_PORT_WS_DEPLOYMENT_AGENT}
       - HOST_PORT_HTTP_DEPLOYMENT_AGENT=${HOST_PORT_HTTP_DEPLOYMENT_AGENT}
-      - HOST_IP_HOST_INTERNAL=host.docker.internal
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - HOST_IP_HOST_INTERNAL=host.docker.internal
@@ -55,7 +54,6 @@ services:
       - BEST_TIME_WINDOW=${BEST_TIME_WINDOW}
       - EMA_ALPHA=${EMA_ALPHA}
       - REQUEST_TIMEOUT=${REQUEST_TIMEOUT}
-      - CACHE_CAPACITY=${CACHE_CAPACITY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -100,6 +98,7 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - TARGET_PORT=${TARGET_PORT}
+      - CACHE_CAPACITY=${CACHE_CAPACITY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: always

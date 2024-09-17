@@ -17,6 +17,7 @@ use crate::cache::SimpleCache;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() {
+    dotenv().ok();
     // Initialize logging
     env_logger::init();
 
@@ -29,7 +30,11 @@ async fn main() {
     let shared_client = UnboundedClient::new();
 
     // Cache for static resources
-    let cache = Arc::new(SimpleCache::new(10000));
+    let cache_size = env::var("CACHE_CAPACITY")
+        .expect("CACHE_CAPACITY must be set")
+        .parse::<usize>()
+        .expect("CACHE_CAPACITY must be a valid usize");
+    let cache = Arc::new(SimpleCache::new(cache_size));
 
     let ws_state = shared_state.clone();
     tokio::spawn(async move {
