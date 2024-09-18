@@ -39,13 +39,12 @@ services:
       - SCALE_STEP=${SCALE_STEP}
       - SCALE_CHECK_PERIOD=${SCALE_CHECK_PERIOD}
       - CPU_WEIGHT=${CPU_WEIGHT}
-      - MEMORY_WEIGHT=${MAX_CONTAINERS}
+      - MEMORY_WEIGHT=${MEMORY_WEIGHT}
       - NETWORK_WEIGHT=${NETWORK_WEIGHT}
       - AVAILABILITY_WEIGHT=${AVAILABILITY_WEIGHT}
       - HISTORY_SIZE=${HISTORY_SIZE}
       - BEST_TIME_WINDOW=${BEST_TIME_WINDOW}
       - EMA_ALPHA=${EMA_ALPHA}
-      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -90,6 +89,7 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - TARGET_PORT=${TARGET_PORT}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT}
       - CACHE_CAPACITY=${CACHE_CAPACITY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
