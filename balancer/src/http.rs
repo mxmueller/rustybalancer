@@ -153,13 +153,8 @@ async fn handle_request(
     if let Some(item) = balancer.next().await {
         let port = env::var("TARGET_PORT").expect("TARGET_PORT must be set");
 
-        println!("Forwarding request to worker: {} (Score: {:.2}, Category: {})",
-                 item.dns_name, item.score, item.utilization_category);
-
         let uri_string = format!("http://{}:{}{}", item.dns_name, port, uri.path());
         let new_uri: Uri = uri_string.parse().unwrap();
-
-        println!("Constructed new URI: {}", new_uri);
 
         let req = Request::builder()
             .method(method.clone())
@@ -170,7 +165,6 @@ async fn handle_request(
         match shared_client.request(req).await {
             Ok(response) => {
                 let status = response.status();
-                println!("Received response from worker. Status: {}, Duration: {:?}", status, start_time.elapsed());
 
                 if is_static && method == hyper::Method::GET && status.is_success() {
                     let (parts, body) = response.into_parts();
@@ -178,7 +172,6 @@ async fn handle_request(
 
                     let cache_key = uri.to_string();
                     cache.set(cache_key.clone(), body_bytes.to_vec(), Duration::from_secs(3600)).await;
-                    println!("Cached static resource with key: {}", cache_key);
 
                     Ok(Response::from_parts(parts, Body::from(body_bytes)))
                 } else {

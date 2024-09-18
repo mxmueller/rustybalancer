@@ -58,10 +58,6 @@ impl UnboundedClient {
                     // handling of request
                     let result = client.request(queued_request.request).await
                         .map_err(ClientError::from);
-                    match &result {
-                        Ok(response) => println!("Request successful. Status: {:?}", response.status()),
-                        Err(e) => println!("Request failed: {}", e),
-                    }
                     if let Err(e) = queued_request.response_sender.send(result).await {
                         println!("Failed to send response: {}", e);
                     }
@@ -98,11 +94,11 @@ impl UnboundedClient {
         }
         match timeout(request_timeout, response_receiver.recv()).await {
             Ok(Some(result)) => {
-                println!("Received response within timeout");
+                // println!("Received response within timeout");
                 result
             },
             Ok(None) => {
-                println!("Channel closed unexpectedly");
+                // println!("Channel closed unexpectedly");
                 Err(ClientError::RequestCanceled)
             },
             Err(_) => {
