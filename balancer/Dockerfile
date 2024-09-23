@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y libssl-dev
 RUN cargo init
 
 COPY Cargo.toml Cargo.toml
-COPY Cargo.lock Cargo.lock
+#COPY Cargo.lock Cargo.lock
 RUN cargo fetch
 
 COPY src/ src/
