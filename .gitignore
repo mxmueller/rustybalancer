@@ -8,8 +8,6 @@ deployment-agent/target/
 balancer/target/
 deployment-agent/target/
 /tests/http-stress/target/
-balancer/Cargo.lock
-deployment-agent/Cargo.lock
 target
 
 # Miscellaneous
