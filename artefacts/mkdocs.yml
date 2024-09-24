@@ -1,3 +1,9 @@
+
+site_url: https://mxmueller.github.io/rustybalancer/
+repo_url: https://github.com/mxmueller/rustybalancer
+copyright: Copyright 2024 Berger, Mueller. All rights reserved
+site_author: ntno
+
 site_name: RustyBalancer Docs
 theme:
   name: terminal
@@ -9,6 +15,7 @@ theme:
     - revision.history
 
 plugins:
+  - search
   - mkdocs-video:
       css_style:
         width: "100%"

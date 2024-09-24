@@ -10,6 +10,8 @@
 5. [WebSocket Communication](#da-websocket-communication)
 6. [Database Integration](#da-database-integration)
 
+----
+
 <a id="da-features"></a>**Features**
 
 - Dynamic container management with Docker

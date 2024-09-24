@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="generator" content="mkdocs-1.6.1, mkdocs-terminal-4.6.0">
+     
+    
+    <meta name="author" content="ntno"> 
+    
+    <link rel="canonical" href="https://mxmueller.github.io/rustybalancer/components/balancer/"><link rel="icon" type="image/png" sizes="192x192" href="../../img/android-chrome-192x192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="../../img/android-chrome-512x512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../img/apple-touch-icon.png" />
+<link rel="shortcut icon" type="image/png" sizes="48x48" href="../../img/favicon.ico" />
+<link rel="icon" type="image/png" sizes="16x16" href="../../img/favicon-16x16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="../../img/favicon-32x32.png" />
+
+
+    
+ 
+<title>Balancer - RustyBalancer Docs</title>
+
+
+<link href="../../css/fontawesome/css/fontawesome.min.css" rel="stylesheet">
+<link href="../../css/fontawesome/css/solid.min.css" rel="stylesheet">
+<link href="../../css/normalize.css" rel="stylesheet">
+<link href="../../css/terminal.css" rel="stylesheet">
+<link href="../../css/theme.css" rel="stylesheet">
+<link href="../../css/theme.tile_grid.css" rel="stylesheet">
+<link href="../../css/theme.footer.css" rel="stylesheet">
+<!-- pink color palette -->
+<link href="../../css/palettes/pink.css" rel="stylesheet">
+
+<!-- page layout -->
+<style>
+/* initially set page layout to a one column grid */
+.terminal-mkdocs-main-grid {
+    display: grid;
+    grid-column-gap: 1.4em;
+    grid-template-columns: auto;
+    grid-template-rows: auto;
+}
+
+/*  
+*   when side navigation is not hidden, use a two column grid.  
+*   if the screen is too narrow, fall back to the initial one column grid layout.
+*   in this case the main content will be placed under the navigation panel. 
+*/
+@media only screen and (min-width: 70em) {
+    .terminal-mkdocs-main-grid {
+        grid-template-columns: 4fr 9fr;
+    }
+}</style>
+
+
+
+     
+    
+    
+
+    
+    
+    
+    
+    
+
+    
+</head>
+
+<body class="terminal"><div class="container">
+    <div class="terminal-nav">
+        <header class="terminal-logo">
+            <div id="mkdocs-terminal-site-name" class="logo terminal-prompt"><a href="https://mxmueller.github.io/rustybalancer/" class="no-style">RustyBalancer Docs</a></div>
+        </header>
+        
+        <nav class="terminal-menu">
+            
+            <ul vocab="https://schema.org/" typeof="BreadcrumbList">
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href="../.." class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Home</span>
+                    </a>
+                    <meta property="position" content="0">
+                </li>
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href="../../setup/" class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Setup</span>
+                    </a>
+                    <meta property="position" content="1">
+                </li>
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href="../../env/" class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Environment</span>
+                    </a>
+                    <meta property="position" content="2">
+                </li>
+                
+                
+                
+                
+                
+                    
+                    
+                    
+            </ul>
+            
+        </nav>
+    </div>
+</div>
+        
+    <div class="container">
+        <div class="terminal-mkdocs-main-grid"><aside id="terminal-mkdocs-side-panel"><nav>
+  
+    <ul class="terminal-mkdocs-side-nav-items">
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../..">Home</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../setup/">Setup</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../env/">Environment</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+            
+            
+                
+                
+        
+
+             
+            
+    
+        
+        <a class="
+
+    terminal-mkdocs-side-nav-item--active" href="../">Components</a>
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        <span class="
+
+    terminal-mkdocs-side-nav-item--active">Balancer</span>
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../deployment-agent/">Deployment Agent</a>
+        
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+            
+            
+                
+                
+        
+
+             
+            
+    
+        
+        <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/">Demo</a>
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/setup/">Setup Process</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/startup/">Starting the System</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/components/">Key Components</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/traffic/">High Traffic Behavior</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/load/">Load Testing</a>
+        
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
+    </ul>
+  
+</nav><hr>
+<nav>
+    <ul>
+        <li><a href="#balancer">Balancer</a></li>
+        
+    </ul>
+</nav>
+</aside>
+            <main id="terminal-mkdocs-main-content">
+<section id="mkdocs-terminal-content">
+    <div><h1 id="balancer">Balancer</h1>
+<p><strong>Table of Contents</strong></p>
+<ol>
+<li><a href="#b-features">Features</a></li>
+<li><a href="#b-system-architecture">System Architecture</a></li>
+<li><a href="#b-configuration">Configuration</a></li>
+<li><a href="#b-dependencies">Dependencies</a></li>
+<li><a href="#b-error-and-logs">Error and Logs</a></li>
+</ol>
+<p><a id="b-features"></a><strong>Features</strong></p>
+<ul>
+<li>Dynamic load balancing based on server scores</li>
+<li>Caching of static resources</li>
+<li>Asynchronous processing of HTTP requests</li>
+<li>Automatic reconnection to WebSocket with exponential backoff</li>
+<li>Periodic garbage collection for cache entries</li>
+</ul>
+<p><a id="b-system-architecture"></a><strong>System Architecture</strong></p>
+<p>The system consists of several interconnected modules:</p>
+<ol>
+<li><strong>Main Application</strong> (<code>main.rs</code>)</li>
+<li><strong>HTTP Server</strong> (<code>http.rs</code>)</li>
+<li><strong>WebSocket Client</strong> (<code>socket.rs</code>)</li>
+<li><strong>Unbounded Client</strong> (<code>client.rs</code>)</li>
+<li><strong>Cache</strong> (<code>cache.rs</code>)</li>
+<li><strong>Queue</strong> (<code>queue.rs</code>)</li>
+</ol>
+<p><strong>Modules</strong></p>
+<p><strong>Main (<code>main.rs</code>)</strong></p>
+<p>The entry point of the application. It sets up the shared state, initializes the UnboundedClient for outgoing requests, creates a cache for static resources, and spawns two main tasks:</p>
+<ul>
+<li>WebSocket connection to receive backend server updates</li>
+<li>HTTP server to handle incoming requests</li>
+</ul>
+<p><strong>HTTP Server (<code>http.rs</code>)</strong></p>
+<p>Implements the HTTP server that receives incoming requests and forwards them to the selected backend server. It uses a <code>DynamicWeightedBalancer</code> to choose the appropriate backend server for each request. Key features include:</p>
+<ul>
+<li>Caching of static resources</li>
+<li>Periodic updates of backend server weights</li>
+<li>Handling of both static and dynamic requests</li>
+</ul>
+<p><strong>WebSocket Client (<code>socket.rs</code>)</strong></p>
+<p>Maintains a WebSocket connection to a deployment agent to receive updates about available backend servers. It continuously attempts to reconnect in case of connection failures, with an exponential backoff strategy.</p>
+<p><strong>Unbounded Client (<code>client.rs</code>)</strong></p>
+<p>A custom HTTP client implementation that can handle a large number of concurrent requests. It uses a channel-based approach to queue requests and process them asynchronously.</p>
+<p><strong>Cache (<code>cache.rs</code>)</strong></p>
+<p>Implements a simple in-memory cache with TTL (Time To Live) for each entry. It includes a background task for garbage collection to remove expired entries.</p>
+<p><strong>Queue (<code>queue.rs</code>)</strong></p>
+<p>Defines the <code>QueueItem</code> struct representing a backend server and provides functionality to parse JSON data into a vector of <code>QueueItem</code>s.</p>
+<p><a id="b-configuration"></a><strong>Configuration</strong></p>
+<p>The application uses environment variables for configuration. Make sure to set the following variables:</p>
+<ul>
+<li><code>HOST_PORT_HTTP_BALANCER</code>: Port for the HTTP server</li>
+<li><code>HOST_PORT_WS_DEPLOYMENT_AGENT</code>: Port for the WebSocket connection to the deployment agent</li>
+<li><code>TARGET_PORT</code>: Port of the backend servers</li>
+<li><code>CACHE_CAPACITY</code>: Maximum number of items in the cache</li>
+<li><code>REQUEST_TIMEOUT</code>: Timeout for outgoing requests (in seconds)</li>
+</ul>
+<p><a id="b-dependencies"></a><strong>Dependencies</strong></p>
+<ul>
+<li><code>tokio</code>: Asynchronous runtime</li>
+<li><code>hyper</code>: HTTP client and server</li>
+<li><code>tokio-tungstenite</code>: WebSocket client</li>
+<li><code>serde</code>: Serialization and deserialization of JSON</li>
+<li><code>rand</code>: Random number generation for the weighted balancer</li>
+<li><code>log</code> and <code>env_logger</code>: Logging</li>
+</ul>
+<p><a id="b-error-and-logs"></a><strong>Error Handling and Logging</strong></p>
+<p>The application uses the <code>log</code> crate for logging. It logs information about connections, errors, and important state changes. Make sure to initialize the logger in your environment to see the logs.</p></div>
+</section>
+
+            </main>
+        </div>
+        <hr><footer>
+    <div class="terminal-mkdocs-footer-grid">
+        <div id="terminal-mkdocs-footer-copyright-info">
+            
+            <p class="text-center text-muted">Copyright 2024 Berger, Mueller. All rights reserved</p>
+             Site built with <a href="http://www.mkdocs.org">MkDocs</a> and <a href="https://github.com/ntno/mkdocs-terminal">Terminal for MkDocs</a>.
+        </div>
+        <div id="terminal-mkdocs-footer-prev-next">
+            <nav class="btn-group">
+                <a href="../" title="Index">Previous</a>
+                |
+                <a href="../deployment-agent/" title="Deployment Agent">Next</a>
+            </nav>
+        </div>
+    </div>
+</footer>
+    </div>
+
+    
+    
+    
+</body>
+
+</html>

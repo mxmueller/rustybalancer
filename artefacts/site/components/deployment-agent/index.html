@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="generator" content="mkdocs-1.6.1, mkdocs-terminal-4.6.0">
+     
+    
+    <meta name="author" content="ntno"> 
+    
+    <link rel="canonical" href="https://mxmueller.github.io/rustybalancer/components/deployment-agent/"><link rel="icon" type="image/png" sizes="192x192" href="../../img/android-chrome-192x192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="../../img/android-chrome-512x512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../../img/apple-touch-icon.png" />
+<link rel="shortcut icon" type="image/png" sizes="48x48" href="../../img/favicon.ico" />
+<link rel="icon" type="image/png" sizes="16x16" href="../../img/favicon-16x16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="../../img/favicon-32x32.png" />
+
+
+    
+ 
+<title>Deployment Agent - RustyBalancer Docs</title>
+
+
+<link href="../../css/fontawesome/css/fontawesome.min.css" rel="stylesheet">
+<link href="../../css/fontawesome/css/solid.min.css" rel="stylesheet">
+<link href="../../css/normalize.css" rel="stylesheet">
+<link href="../../css/terminal.css" rel="stylesheet">
+<link href="../../css/theme.css" rel="stylesheet">
+<link href="../../css/theme.tile_grid.css" rel="stylesheet">
+<link href="../../css/theme.footer.css" rel="stylesheet">
+<!-- pink color palette -->
+<link href="../../css/palettes/pink.css" rel="stylesheet">
+
+<!-- page layout -->
+<style>
+/* initially set page layout to a one column grid */
+.terminal-mkdocs-main-grid {
+    display: grid;
+    grid-column-gap: 1.4em;
+    grid-template-columns: auto;
+    grid-template-rows: auto;
+}
+
+/*  
+*   when side navigation is not hidden, use a two column grid.  
+*   if the screen is too narrow, fall back to the initial one column grid layout.
+*   in this case the main content will be placed under the navigation panel. 
+*/
+@media only screen and (min-width: 70em) {
+    .terminal-mkdocs-main-grid {
+        grid-template-columns: 4fr 9fr;
+    }
+}</style>
+
+
+
+     
+    
+    
+
+    
+    
+    
+    
+    
+
+    
+</head>
+
+<body class="terminal"><div class="container">
+    <div class="terminal-nav">
+        <header class="terminal-logo">
+            <div id="mkdocs-terminal-site-name" class="logo terminal-prompt"><a href="https://mxmueller.github.io/rustybalancer/" class="no-style">RustyBalancer Docs</a></div>
+        </header>
+        
+        <nav class="terminal-menu">
+            
+            <ul vocab="https://schema.org/" typeof="BreadcrumbList">
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href="../.." class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Home</span>
+                    </a>
+                    <meta property="position" content="0">
+                </li>
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href="../../setup/" class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Setup</span>
+                    </a>
+                    <meta property="position" content="1">
+                </li>
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href="../../env/" class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Environment</span>
+                    </a>
+                    <meta property="position" content="2">
+                </li>
+                
+                
+                
+                
+                
+                    
+                    
+                    
+            </ul>
+            
+        </nav>
+    </div>
+</div>
+        
+    <div class="container">
+        <div class="terminal-mkdocs-main-grid"><aside id="terminal-mkdocs-side-panel"><nav>
+  
+    <ul class="terminal-mkdocs-side-nav-items">
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../..">Home</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../setup/">Setup</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../env/">Environment</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+            
+            
+                
+                
+        
+
+             
+            
+    
+        
+        <a class="
+
+    terminal-mkdocs-side-nav-item--active" href="../">Components</a>
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../balancer/">Balancer</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        <span class="
+
+    terminal-mkdocs-side-nav-item--active">Deployment Agent</span>
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+            
+            
+                
+                
+        
+
+             
+            
+    
+        
+        <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/">Demo</a>
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/setup/">Setup Process</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/startup/">Starting the System</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/components/">Key Components</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/traffic/">High Traffic Behavior</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../../tutorial/load/">Load Testing</a>
+        
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
+    </ul>
+  
+</nav><hr>
+<nav>
+    <ul>
+        <li><a href="#deployment-agent">Deployment-Agent</a></li>
+        
+    </ul>
+</nav>
+</aside>
+            <main id="terminal-mkdocs-main-content">
+<section id="mkdocs-terminal-content">
+    <div><h1 id="deployment-agent">Deployment-Agent</h1>
+<p><strong>Table of Contents</strong></p>
+<ol>
+<li><a href="#da-features">Features</a></li>
+<li><a href="#da-system-architecture">System Architecture</a></li>
+<li><a href="#da-key-concepts">Key Concepts</a></li>
+<li><a href="#da-monitoring-and-scaling">Monitoring and Scaling</a></li>
+<li><a href="#da-websocket-communication">WebSocket Communication</a></li>
+<li><a href="#da-database-integration">Database Integration</a></li>
+</ol>
+<p><a id="da-features"></a><strong>Features</strong></p>
+<ul>
+<li>Dynamic container management with Docker</li>
+<li>Real-time performance monitoring of containers</li>
+<li>Automatic scaling based on load and performance metrics</li>
+<li>WebSocket server for real-time updates</li>
+<li>Redis integration for persistent storage</li>
+<li>Sophisticated load balancing algorithm</li>
+<li>HTTP server for stats and management endpoints</li>
+</ul>
+<p><a id="da-system-architecture"></a><strong>System Architecture</strong></p>
+<p>The system consists of several interconnected modules:</p>
+<ol>
+<li><strong>Main Application</strong> (<code>main.rs</code>)</li>
+<li><strong>Container Management</strong> (<code>container.rs</code>)</li>
+<li><strong>Queue Management</strong> (<code>queue.rs</code>)</li>
+<li><strong>Performance Monitoring</strong> (<code>stats.rs</code>)</li>
+<li><strong>WebSocket Server</strong> (<code>socket.rs</code>)</li>
+<li><strong>HTTP Server</strong> (<code>http.rs</code>)</li>
+<li><strong>Database Integration</strong> (<code>db.rs</code>)</li>
+</ol>
+<p><strong>Modules</strong></p>
+<p><strong>Main (<code>main.rs</code>)</strong></p>
+<ul>
+<li>Initializes the system, starts the HTTP server and WebSocket server</li>
+<li>Coordinates all components</li>
+</ul>
+<p><strong>Container Management (<code>container.rs</code>)</strong>
+Handles Docker container operations.</p>
+<ul>
+<li>Creates, stops, and removes Docker containers</li>
+<li>Manages container lifecycle</li>
+<li>Interacts with Docker API</li>
+</ul>
+<p><strong>Queue Management (<code>queue.rs</code>)</strong></p>
+<ul>
+<li>Manages the queue of active containers and scaling decisions</li>
+<li>Periodically rebuilds the queue based on current system state</li>
+</ul>
+<p><strong>Performance Monitoring (<code>stats.rs</code>)</strong></p>
+<ul>
+<li>Collects CPU, memory, network, and availability metrics</li>
+<li>Calculates performance scores for containers</li>
+<li>Implements sophisticated algorithms for trend analysis and dynamic thresholds</li>
+</ul>
+<p><strong>WebSocket Server (<code>socket.rs</code>)</strong></p>
+<ul>
+<li>Provides real-time updates of the container queue to clients</li>
+<li>Implements WebSocket protocol for bi-directional communication</li>
+</ul>
+<p><strong>HTTP Server (<code>http.rs</code>)</strong></p>
+<ul>
+<li>Exposes endpoints for retrieving container stats</li>
+<li>Implements CORS for cross-origin requests</li>
+</ul>
+<p><strong>Database Integration (<code>db.rs</code>)</strong></p>
+<ul>
+<li>Manages Redis connection</li>
+<li>Provides methods for storing and retrieving configuration values</li>
+</ul>
+<p><a id="da-key-concepts"></a><strong>Key Concepts</strong></p>
+<p><strong>Container Lifecycle</strong>
+Containers go through several states:</p>
+<ul>
+<li>INIT: Initial state when a container is created</li>
+<li>LU (Low Utilization): Container is underutilized</li>
+<li>MU (Medium Utilization): Container has moderate utilization</li>
+<li>HU (High Utilization): Container is highly utilized</li>
+<li>SUNDOWN: Container is marked for removal</li>
+</ul>
+<p><strong>Performance Scoring</strong>
+Each container receives scores based on:</p>
+<ul>
+<li>CPU usage</li>
+<li>Memory usage</li>
+<li>Network usage</li>
+<li>Availability (response time)</li>
+</ul>
+<p>These scores are combined into an overall score that determines the container's utilization category.</p>
+<p><a id="da-monitoring-and-scaling"></a><strong>Monitoring and Scaling</strong></p>
+<p>The system continuously monitors container performance and makes scaling decisions based on:</p>
+<ul>
+<li>Average load across all containers</li>
+<li>Presence of critically loaded containers</li>
+<li>Current number of active containers vs. desired number</li>
+<li>Cooldown periods to prevent rapid scaling events</li>
+</ul>
+<p>Scaling operations include:</p>
+<ul>
+<li>Creating new containers when load is high</li>
+<li>Marking containers for removal (SUNDOWN) when load is low</li>
+</ul>
+<p><a id="da-websocket-communication"></a><strong>WebSocket Communication</strong></p>
+<p>The WebSocket server provides real-time updates of the container queue to clients. This allows for immediate reflection of system changes in client applications.</p>
+<p><a id="da-database-integration"></a><strong>Database Integration</strong></p>
+<p>Redis is used for persistent storage of:</p>
+<ul>
+<li>Container information</li>
+<li>Configuration values</li>
+<li>Performance metrics</li>
+</ul>
+<p>This allows for system state recovery in case of restarts.</p></div>
+</section>
+
+            </main>
+        </div>
+        <hr><footer>
+    <div class="terminal-mkdocs-footer-grid">
+        <div id="terminal-mkdocs-footer-copyright-info">
+            
+            <p class="text-center text-muted">Copyright 2024 Berger, Mueller. All rights reserved</p>
+             Site built with <a href="http://www.mkdocs.org">MkDocs</a> and <a href="https://github.com/ntno/mkdocs-terminal">Terminal for MkDocs</a>.
+        </div>
+        <div id="terminal-mkdocs-footer-prev-next">
+            <nav class="btn-group">
+                <a href="../balancer/" title="Balancer">Previous</a>
+                |
+                <a href="../../tutorial/" title="Index">Next</a>
+            </nav>
+        </div>
+    </div>
+</footer>
+    </div>
+
+    
+    
+    
+</body>
+
+</html>

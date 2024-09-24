@@ -1,16 +1,21 @@
 
 <div style="text-align: center;">
-  <img src="../images/logo.png" alt="Logo" width="250"/>
+  <img src="./images/logo-main.png" alt="Logo" width="320"/>
 </div>
 
+
 # RustyBalancer
+A high-performance, auto-scaling load balancer implemented in Rust.
+## Overview
 
-RustyBalancer is a load balancer and deployment engine prototype, featuring:
+This project provides a robust load balancing solution with automatic scaling capabilities. Built with Rust, it offers efficient resource management and optimal request distribution for containerized applications.
 
-- **Probabilities** for distribution
-- **Proactive Handling**
-- **Load Balancer**
-- **Deployment Engine**
+Key features:
+
+- Dynamic load balancing
+- Automatic scaling based on real-time metrics
+- Container-native architecture
+- High performance and low resource footprint
 
 ## Contributing
 

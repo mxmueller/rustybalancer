@@ -8,6 +8,8 @@
 4. [Dependencies](#b-dependencies)
 5. [Error and Logs](#b-error-and-logs)
 
+----
+
 <a id="b-features"></a>**Features**
 
 - Dynamic load balancing based on server scores
