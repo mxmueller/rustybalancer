@@ -1,3 +1,15 @@
+
+# RustyBalancer Setup
+**Table of Contents** <br> <br>
+1. [Setup](#setup) <br>
+2. [Prerequisites](#prerequisites) <br>
+3. [Configuration Files](#configuration-files) <br>
+4. [Set Up Configuration (.env)](#set-up-configuration) <br>
+5. [Usage](#usage)
+
+----
+
+<a id="setup"></a>
 # Setup
 Welcome to RustyBalancer!
 
@@ -39,11 +51,13 @@ sudo usermod -aG docker $USER
 This repository contains Docker Compose configurations for different environments: production, development, and a slim environment. 
 The `run.sh` script located in the `jobs` directory allows you to easily build and start Docker containers for the specified environment.
 
+<a id="prerequisites"></a>
 # Prerequisites
 
 Docker must be installed on your system. You can download it from [Docker's official site](https://www.docker.com/products/docker-desktop).
 If you are using macOS or Windows, `docker-compose` must also be installed. On Linux, `docker compose` (the Docker CLI plugin) is preferred.
 
+<a id="configuration-files"></a>
 ## Configuration Files
 
 `docker-compose.yaml`:
@@ -70,10 +84,22 @@ This configuration helps to run the application with minimal overhead, making it
 Includes a lightweight setup without the dashboard and redis-insight service.
 Includes the same environment variables and configurations for the deployment-agent service as docker-compose.dev.yml.
 
+<a id="set-up-configuration"></a>
+## Set Up Configuration (.env)
+
+```bash
+cd jobs
+./setup.sh
+```
+
+This script generates a `.env` file in the project root with your RustyBalancer configuration.
+
+<a id="usage"></a>
 ## Usage
 
 The `run.sh` script is used to build and start the Docker containers. It takes a flag `-e` to specify the environment (`prod`, `dev`, or `slim`).
 
+<a id="running-the-script"></a>
 ### Running the Script
 
 Navigate to the `jobs` directory:
@@ -106,25 +132,8 @@ For the slim environment:
 ./run.sh -e slim
 ```
 
+<a id="script-explanation"></a>
 ### Script Explanation
 
 The `run.sh` script checks for the operating system and determines whether to use `docker compose` or `docker-compose` based on the system's available commands. It then processes the `-e` flag to determine which Docker Compose files to use.
 
-Here's the logic breakdown:
-
-**OS and Command Check**:
-
-**Linux:** <br>
-Checks if `docker` is installed and uses `docker compose`.
-
-**Other Systems:** <br>
-Checks if `docker-compose` is installed and uses `docker-compose`.
-
-**Environment Selection**: <br>
-Based on the `-e` flag, it sets the appropriate Docker Compose files: <br>
-     - `prod`: Uses `docker-compose.yaml` <br>
-     - `dev`: Uses `docker-compose.yaml` and `docker-compose.dev.yaml` <br>
-     - `slim`: Uses `docker-compose.yaml` and `docker-compose.slim.yaml`
-
-**Build and Start Containers**: <br>
-The script builds and starts the Docker containers using the selected configuration files.
