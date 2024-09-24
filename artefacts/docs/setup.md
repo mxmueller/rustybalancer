@@ -121,9 +121,9 @@ Checks if `docker` is installed and uses `docker compose`.
 Checks if `docker-compose` is installed and uses `docker-compose`.
 
 **Environment Selection**: <br>
-Based on the `-e` flag, it sets the appropriate Docker Compose files:
-     - `prod`: Uses `docker-compose.yaml`
-     - `dev`: Uses `docker-compose.yaml` and `docker-compose.dev.yaml`
+Based on the `-e` flag, it sets the appropriate Docker Compose files: <br>
+     - `prod`: Uses `docker-compose.yaml` <br>
+     - `dev`: Uses `docker-compose.yaml` and `docker-compose.dev.yaml` <br>
      - `slim`: Uses `docker-compose.yaml` and `docker-compose.slim.yaml`
 
 **Build and Start Containers**: <br>
