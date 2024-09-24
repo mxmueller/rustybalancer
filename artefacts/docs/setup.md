@@ -6,18 +6,29 @@ Follow the instructions and get familiar with the environment variables to prope
 Have fun! 🦀
 
 ----
-
 **Clone the repository:**
 
-You can either simply clone the repository as usual. 
+To set up the project, you need to clone the main repository. <br>
+Choose the method that best suits your needs. If you're setting up for development or testing, cloning with submodules is recommended to ensure you have all the necessary components. <br>
+You have two options:
 
-Or use the command with submodule you are cloning the linked repository `rustybalancer-test-suite` as well which contains automated test cases for [http-stress-tests](https://github.com/mxmueller/rustybalancer-test-suite/blob/main/http-stress/README.md) and [QR Code Generator Stress Tests](https://github.com/mxmueller/rustybalancer-test-suite/tree/main/qr-code).
+- **Basic Clone:** <br>
+   This method will clone only the main repository. It's sufficient if you only need the core codebase.
+   Use the following commands to clone the repository and navigate into it:
 
-```bash
+```shell  
 git clone https://github.com/mxmueller/RustyBalancer.git
-cd RustyBalancer
 ```
 
+- **Clone with Submodules:** <br>
+   If you also need the test suite for automated testing, you should clone the repository with its submodules. 
+   The submodule `rustybalancer-test-suite` includes automated test cases for [HTTP Stress Tests](https://github.com/mxmueller/rustybalancer-test-suite/blob/main/http-stress/README.md) and [QR Code Generator Stress Tests](https://github.com/mxmueller/rustybalancer-test-suite/tree/main/qr-code). <br> <br>
+   These tests are crucial for validating the performance and reliability of your setup.
+   Cloning with submodules ensures that you have the necessary test cases integrated into your project for thorough testing and validation. <br> <br>
+   Use the following commands to clone the repository along with its submodules: <br>
+```bash
+git clone --recursive https://github.com/mxmueller/RustyBalancer.git
+``` 
 
 **Add current user to Docker group (if needed):**
 
@@ -30,22 +41,25 @@ This repository contains Docker Compose configurations for different environment
 
 # Prerequisites
 
-- Docker must be installed on your system. You can download it from [Docker's official site](https://www.docker.com/products/docker-desktop).
-- If you are using macOS or Windows, `docker-compose` must also be installed. On Linux, `docker compose` (the Docker CLI plugin) is preferred.
+Docker must be installed on your system. You can download it from [Docker's official site](https://www.docker.com/products/docker-desktop).
+If you are using macOS or Windows, `docker-compose` must also be installed. On Linux, `docker compose` (the Docker CLI plugin) is preferred.
 
 ## Configuration Files
 
-- `docker-compose.yaml`: 
- 
-The base configuration for the production environment.
+`docker-compose.yaml`: 
 
-- `docker-compose.dev.yaml`: 
+This file is designed to be used in a production environment where performance, reliability, and security are the primary concerns.
+It typically includes optimizations and configurations suited for a live production system.
 
-Additional configuration for the development environment.
+`docker-compose.dev.yaml`: 
 
-- `docker-compose.slim.yaml`: 
+Ideal for developers who need a local environment for building and testing the application. 
+This configuration file typically includes settings that make it easier to debug and iterate on the code without affecting the production setup.
 
-Additional configuration for a slim environment.
+`docker-compose.slim.yaml`: 
+
+Suitable for environments where resources are limited, such as in constrained or embedded systems. 
+This configuration helps to run the application with minimal overhead, making it ideal for testing or deployment in resource-constrained environments.
 
 ## Usage
 
@@ -63,19 +77,22 @@ Make the script executable (if it isn't already):
 chmod +x run.sh
 ```
 
-Run the script with the desired environment:
+**Run the script with the desired environment:**
 
-- For the production environment:
+For the production environment:
+
 ```shell
 ./run.sh -e prod
 ```
 
-- For the development environment:
+For the development environment:
+
 ```shell
 ./run.sh -e dev
 ```
 
-- For the slim environment:
+For the slim environment:
+
 ```shell
 ./run.sh -e slim
 ```
@@ -86,15 +103,19 @@ The `run.sh` script checks for the operating system and determines whether to us
 
 Here's the logic breakdown:
 
-1. **OS and Command Check**:
-    - On Linux, it checks if `docker` is installed and uses `docker compose`.
-    - On other systems, it checks if `docker-compose` is installed and uses `docker-compose`.
+**OS and Command Check**:
 
-2. **Environment Selection**:
-    - Based on the `-e` flag, it sets the appropriate Docker Compose files:
-        - `prod`: Uses `docker-compose.yaml`
-        - `dev`: Uses `docker-compose.yaml` and `docker-compose.dev.yaml`
-        - `slim`: Uses `docker-compose.yaml` and `docker-compose.slim.yaml`
+**Linux:** <br>
+Checks if `docker` is installed and uses `docker compose`.
 
-3. **Build and Start Containers**:
-    - The script builds and starts the Docker containers using the selected configuration files.
+**Other Systems:** <br>
+Checks if `docker-compose` is installed and uses `docker-compose`.
+
+**Environment Selection**: <br>
+Based on the `-e` flag, it sets the appropriate Docker Compose files:
+     - `prod`: Uses `docker-compose.yaml`
+     - `dev`: Uses `docker-compose.yaml` and `docker-compose.dev.yaml`
+     - `slim`: Uses `docker-compose.yaml` and `docker-compose.slim.yaml`
+
+**Build and Start Containers**: <br>
+The script builds and starts the Docker containers using the selected configuration files.
