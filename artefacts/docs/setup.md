@@ -35,9 +35,9 @@ git clone --recursive https://github.com/mxmueller/RustyBalancer.git
 ```bash
 sudo usermod -aG docker $USER
 ```
-REMINDER, das hier müsse https://forums.docker.com/t/connection-refused-on-host-docker-internal/136925/2
 
-This repository contains Docker Compose configurations for different environments: production, development, and a slim environment. The `run.sh` script located in the `jobs` directory allows you to easily build and start Docker containers for the specified environment.
+This repository contains Docker Compose configurations for different environments: production, development, and a slim environment. 
+The `run.sh` script located in the `jobs` directory allows you to easily build and start Docker containers for the specified environment.
 
 # Prerequisites
 
@@ -46,20 +46,29 @@ If you are using macOS or Windows, `docker-compose` must also be installed. On L
 
 ## Configuration Files
 
-`docker-compose.yaml`: 
+`docker-compose.yaml`:
 
 This file is designed to be used in a production environment where performance, reliability, and security are the primary concerns.
 It typically includes optimizations and configurations suited for a live production system.
+
+Includes the following services: redis, deployment-agent, dashboard, and balancer.
 
 `docker-compose.dev.yaml`: 
 
 Ideal for developers who need a local environment for building and testing the application. 
 This configuration file typically includes settings that make it easier to debug and iterate on the code without affecting the production setup.
 
+Includes all the services present in docker-compose.yaml: redis, deployment-agent, dashboard, and balancer.
+Includes the redis-insight service, which provides a Redis management tool.
+Includes more environment variables and configurations for the deployment-agent service and various scaling-related settings.
+
 `docker-compose.slim.yaml`: 
 
-Suitable for environments where resources are limited, such as in constrained or embedded systems. 
+Suitable for environments where resources are limited, such as in constrained or embedded systems.
 This configuration helps to run the application with minimal overhead, making it ideal for testing or deployment in resource-constrained environments.
+
+Includes a lightweight setup without the dashboard and redis-insight service.
+Includes the same environment variables and configurations for the deployment-agent service as docker-compose.dev.yml.
 
 ## Usage
 
