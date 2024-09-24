@@ -16,10 +16,8 @@ plugins:
 
 nav:
   - Home: 'index.md'
-  - Getting Started:
-    - Index: 'getting-started.md'
-    - Setup: 'getting-started/setup.md'
-    - Environment: 'getting-started/env.md'
+  - Setup: 'setup.md'
+  - Environment: 'env.md'
   - Components:
       - Index: 'components.md'
       - Balancer: 'components/balancer.md'

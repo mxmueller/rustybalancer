@@ -1,6 +1,17 @@
 # Setup
+Welcome to RustyBalancer!
+
+Follow the instructions and get familiar with the environment variables to properly get your workflow going.
+
+Have fun! 🦀
+
+----
 
 **Clone the repository:**
+
+You can either simply clone the repository as usual. 
+
+Or use the command with submodule you are cloning the linked repository `rustybalancer-test-suite` as well which contains automated test cases for [http-stress-tests](https://github.com/mxmueller/rustybalancer-test-suite/blob/main/http-stress/README.md) and [QR Code Generator Stress Tests](https://github.com/mxmueller/rustybalancer-test-suite/tree/main/qr-code).
 
 ```bash
 git clone https://github.com/mxmueller/RustyBalancer.git
