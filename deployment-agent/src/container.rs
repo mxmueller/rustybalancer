@@ -5,7 +5,7 @@ use bollard::errors::Error;
 use std::collections::HashMap;
 use std::env;
 use rand::Rng;
-use bollard::image::CreateImageOptions;
+use bollard::image::{CreateImageOptions, ListImagesOptions};
 use futures_util::StreamExt;
 use md5;
 use redis::Commands;
@@ -55,9 +55,28 @@ pub fn update_container_category(
     conn.hset(key, "category", category)
 }
 
-
 async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
-    println!("Starting to pull image: {}", image_name);
+    println!("Checking if image exists locally: {}", image_name);
+
+    // Check if the image already exists locally
+    let list_options = ListImagesOptions::<String> {
+        all: true,
+        filters: {
+            let mut filters = HashMap::new();
+            filters.insert("reference".to_string(), vec![image_name.to_string()]);
+            filters
+        },
+        ..Default::default()
+    };
+
+    let images = docker.list_images(Some(list_options)).await?;
+
+    if !images.is_empty() {
+        println!("Image {} already exists locally. Skipping pull.", image_name);
+        return Ok(());
+    }
+
+    println!("Image not found locally. Starting to pull image: {}", image_name);
     let start_time = Instant::now();
     let create_image_options = CreateImageOptions {
         from_image: image_name,
@@ -123,7 +142,6 @@ async fn pull_image(docker: &Docker, image_name: &str) -> Result<(), Error> {
     println!("Max retries reached while pulling image: {}", image_name);
     Err(Error::IOError { err: std::io::Error::new(std::io::ErrorKind::Other, "Max retries reached while pulling image") })
 }
-
 
 pub async fn create_container(
     container_name: &str,
@@ -380,6 +398,7 @@ pub async fn manage_containers(app_identifier: &str, default_container: i16) -> 
 
     Ok(queue_items)
 }
+
 pub async fn remove_container(app_identifier: &str, container_name: &str) -> Result<(), Error> {
     println!("Removing container: {}", container_name);
     let docker = Docker::connect_with_unix_defaults().expect("Failed to connect to Docker");

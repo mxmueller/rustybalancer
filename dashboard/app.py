@@ -9,7 +9,7 @@ st.set_page_config(layout="wide")
 
 st.title('RustBalancer™')
 
-st_autorefresh(interval=10000, key="datarefresh")
+st_autorefresh(interval=5000, key="datarefresh")
 
 api_url = os.getenv('DEPLOYMENT_URL')
 
