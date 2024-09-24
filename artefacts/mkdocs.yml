@@ -24,7 +24,7 @@ nav:
       - Index: 'components.md'
       - Balancer: 'components/balancer.md'
       - Deployment Agent: 'components/deployment-agent.md'
-  - Tutorial:
+  - Demo:
     - Index: 'tutorial.md'
     - Setup Process: './tutorial/setup.md'
     - Starting the System: './tutorial/startup.md'
