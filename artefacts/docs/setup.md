@@ -1,4 +1,11 @@
 # Setup
+Welcome to RustyBalancer!
+
+Follow the instructions and get familiar with the environment variables to properly get your workflow going.
+
+Have fun! 🦀
+
+----
 
 **Clone the repository:**
 
