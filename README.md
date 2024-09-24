@@ -4,7 +4,7 @@
 # RustyBalancer
 
 RustyBalancer is a load balancer and deployment engine prototype, featuring:
-- **Round Robin with Priorities** for distribution
+- **Probabilities** for distribution
 - **Proactive Handling**
 - **Load Balancer**
 - **Deployment Engine**
