@@ -4,8 +4,26 @@ theme:
   palette: pink
   features:
     - footer.prev_next
+    - navigation.side.indexes
+    - revision.date
+    - revision.history
+
+plugins:
+  - mkdocs-video:
+      css_style:
+        width: "100%"
+        height: "18.172vw"
 
 nav:
   - Home: 'index.md'
   - Getting Started: 'setup.md'
   - Components: 'components.md'
+  - Tutorial:
+    - Index: 'tutorial.md'
+    - Setup Process: './tutorial/setup.md'
+    - Starting the System: './tutorial/startup.md'
+    - Key Components: './tutorial/components.md'
+    - High Traffic Behavior: './tutorial/traffic.md'
+    - Load Testing: './tutorial/load.md'
+
+
