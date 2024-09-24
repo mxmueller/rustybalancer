@@ -16,8 +16,14 @@ plugins:
 
 nav:
   - Home: 'index.md'
-  - Getting Started: 'setup.md'
-  - Components: 'components.md'
+  - Getting Started:
+    - Index: 'getting-started.md'
+    - Setup: 'getting-started/setup.md'
+    - Environment: 'getting-started/env.md'
+  - Components:
+      - Index: 'components.md'
+      - Balancer: 'components/balancer.md'
+      - Deployment Agent: 'components/deployment-agent.md'
   - Tutorial:
     - Index: 'tutorial.md'
     - Setup Process: './tutorial/setup.md'
@@ -25,5 +31,3 @@ nav:
     - Key Components: './tutorial/components.md'
     - High Traffic Behavior: './tutorial/traffic.md'
     - Load Testing: './tutorial/load.md'
-
-
