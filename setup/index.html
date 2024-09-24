@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="generator" content="mkdocs-1.6.1, mkdocs-terminal-4.6.0">
+     
+     
+    <link rel="icon" type="image/png" sizes="192x192" href="../img/android-chrome-192x192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="../img/android-chrome-512x512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="../img/apple-touch-icon.png" />
+<link rel="shortcut icon" type="image/png" sizes="48x48" href="../img/favicon.ico" />
+<link rel="icon" type="image/png" sizes="16x16" href="../img/favicon-16x16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="../img/favicon-32x32.png" />
+
+
+    
+ 
+<title>Setup - RustyBalancer Docs</title>
+
+
+<link href="../css/fontawesome/css/fontawesome.min.css" rel="stylesheet">
+<link href="../css/fontawesome/css/solid.min.css" rel="stylesheet">
+<link href="../css/normalize.css" rel="stylesheet">
+<link href="../css/terminal.css" rel="stylesheet">
+<link href="../css/theme.css" rel="stylesheet">
+<link href="../css/theme.tile_grid.css" rel="stylesheet">
+<link href="../css/theme.footer.css" rel="stylesheet">
+<!-- pink color palette -->
+<link href="../css/palettes/pink.css" rel="stylesheet">
+
+<!-- page layout -->
+<style>
+/* initially set page layout to a one column grid */
+.terminal-mkdocs-main-grid {
+    display: grid;
+    grid-column-gap: 1.4em;
+    grid-template-columns: auto;
+    grid-template-rows: auto;
+}
+
+/*  
+*   when side navigation is not hidden, use a two column grid.  
+*   if the screen is too narrow, fall back to the initial one column grid layout.
+*   in this case the main content will be placed under the navigation panel. 
+*/
+@media only screen and (min-width: 70em) {
+    .terminal-mkdocs-main-grid {
+        grid-template-columns: 4fr 9fr;
+    }
+}</style>
+
+
+
+     
+    
+    
+
+    
+    
+    
+    
+    
+
+    
+</head>
+
+<body class="terminal"><div class="container">
+    <div class="terminal-nav">
+        <header class="terminal-logo">
+            <div id="mkdocs-terminal-site-name" class="logo terminal-prompt"><a href="/" class="no-style">RustyBalancer Docs</a></div>
+        </header>
+        
+        <nav class="terminal-menu">
+            
+            <ul vocab="https://schema.org/" typeof="BreadcrumbList">
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href=".." class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Home</span>
+                    </a>
+                    <meta property="position" content="0">
+                </li>
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href="./" class="menu-item active" property="item" typeof="WebPage">
+                        <span property="name">Setup</span>
+                    </a>
+                    <meta property="position" content="1">
+                </li>
+                
+                
+                <li property="itemListElement" typeof="ListItem">
+                    <a href="../env/" class="menu-item " property="item" typeof="WebPage">
+                        <span property="name">Environment</span>
+                    </a>
+                    <meta property="position" content="2">
+                </li>
+                
+                
+                
+                
+                
+                    
+                    
+                    
+            </ul>
+            
+        </nav>
+    </div>
+</div>
+        
+    <div class="container">
+        <div class="terminal-mkdocs-main-grid"><aside id="terminal-mkdocs-side-panel"><nav>
+  
+    <ul class="terminal-mkdocs-side-nav-items">
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="..">Home</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        <span class="
+
+    terminal-mkdocs-side-nav-item--active">Setup</span>
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../env/">Environment</a>
+        
+    
+    
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+            
+            
+                
+                
+        
+
+             
+            
+    
+        
+        <a class="
+
+    terminal-mkdocs-side-nav-item" href="../components/">Components</a>
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../components/balancer/">Balancer</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../components/deployment-agent/">Deployment Agent</a>
+        
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
+          
+
+
+
+<li class="terminal-mkdocs-side-nav-li">
+    
+    
+        
+        
+            
+            
+                
+                
+        
+
+             
+            
+    
+        
+        <a class="
+
+    terminal-mkdocs-side-nav-item" href="../tutorial/">Demo</a>
+    
+    
+        
+      
+        
+            <ul class="terminal-mkdocs-side-nav-li-ul">
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../tutorial/setup/">Setup Process</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../tutorial/startup/">Starting the System</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../tutorial/components/">Key Components</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../tutorial/traffic/">High Traffic Behavior</a>
+        
+    
+    </li>
+            
+        
+            
+            
+                
+                
+            
+
+             
+                <li class="terminal-mkdocs-side-nav-li-ul-li">
+    
+        
+        
+            <a class="
+
+    terminal-mkdocs-side-nav-item" href="../tutorial/load/">Load Testing</a>
+        
+    
+    </li>
+            
+            
+    </ul>
+        
+    
+  </li>
+        
+    </ul>
+  
+</nav><hr>
+<nav>
+    <ul>
+        <li><a href="#setup">Setup</a></li>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#configuration-files">Configuration Files</a></li><li><a href="#usage">Usage</a></li>
+    </ul>
+</nav>
+</aside>
+            <main id="terminal-mkdocs-main-content">
+<section id="mkdocs-terminal-content">
+    <div><h1 id="setup">Setup</h1>
+<p>Welcome to RustyBalancer!</p>
+<p>Follow the instructions and get familiar with the environment variables to properly get your workflow going.</p>
+<p>Have fun! 🦀</p>
+<hr>
+<p><strong>Clone the repository:</strong></p>
+<p>You can either simply clone the repository as usual. </p>
+<p>Or use the command with submodule you are cloning the linked repository <code>rustybalancer-test-suite</code> as well which contains automated test cases for <a href="https://github.com/mxmueller/rustybalancer-test-suite/blob/main/http-stress/README.md">http-stress-tests</a> and <a href="https://github.com/mxmueller/rustybalancer-test-suite/tree/main/qr-code">QR Code Generator Stress Tests</a>.</p>
+<pre><code class="language-bash">git clone https://github.com/mxmueller/RustyBalancer.git
+cd RustyBalancer
+</code></pre>
+<p><strong>Add current user to Docker group (if needed):</strong></p>
+<pre><code class="language-bash">sudo usermod -aG docker $USER
+</code></pre>
+<p>REMINDER, das hier müsse https://forums.docker.com/t/connection-refused-on-host-docker-internal/136925/2</p>
+<p>This repository contains Docker Compose configurations for different environments: production, development, and a slim environment. The <code>run.sh</code> script located in the <code>jobs</code> directory allows you to easily build and start Docker containers for the specified environment.</p>
+<h1 id="prerequisites">Prerequisites</h1>
+<ul>
+<li>Docker must be installed on your system. You can download it from <a href="https://www.docker.com/products/docker-desktop">Docker's official site</a>.</li>
+<li>If you are using macOS or Windows, <code>docker-compose</code> must also be installed. On Linux, <code>docker compose</code> (the Docker CLI plugin) is preferred.</li>
+</ul>
+<h2 id="configuration-files">Configuration Files</h2>
+<ul>
+<li><code>docker-compose.yaml</code>: </li>
+</ul>
+<p>The base configuration for the production environment.</p>
+<ul>
+<li><code>docker-compose.dev.yaml</code>: </li>
+</ul>
+<p>Additional configuration for the development environment.</p>
+<ul>
+<li><code>docker-compose.slim.yaml</code>: </li>
+</ul>
+<p>Additional configuration for a slim environment.</p>
+<h2 id="usage">Usage</h2>
+<p>The <code>run.sh</code> script is used to build and start the Docker containers. It takes a flag <code>-e</code> to specify the environment (<code>prod</code>, <code>dev</code>, or <code>slim</code>).</p>
+<h3 id="running-the-script">Running the Script</h3>
+<p>Navigate to the <code>jobs</code> directory:</p>
+<pre><code class="language-shell">cd jobs
+</code></pre>
+<p>Make the script executable (if it isn't already):</p>
+<pre><code class="language-shell">chmod +x run.sh
+</code></pre>
+<p>Run the script with the desired environment:</p>
+<ul>
+<li>For the production environment:</li>
+</ul>
+<pre><code class="language-shell">./run.sh -e prod
+</code></pre>
+<ul>
+<li>For the development environment:</li>
+</ul>
+<pre><code class="language-shell">./run.sh -e dev
+</code></pre>
+<ul>
+<li>For the slim environment:</li>
+</ul>
+<pre><code class="language-shell">./run.sh -e slim
+</code></pre>
+<h3 id="script-explanation">Script Explanation</h3>
+<p>The <code>run.sh</code> script checks for the operating system and determines whether to use <code>docker compose</code> or <code>docker-compose</code> based on the system's available commands. It then processes the <code>-e</code> flag to determine which Docker Compose files to use.</p>
+<p>Here's the logic breakdown:</p>
+<ol>
+<li>
+<p><strong>OS and Command Check</strong>:</p>
+<ul>
+<li>On Linux, it checks if <code>docker</code> is installed and uses <code>docker compose</code>.</li>
+<li>On other systems, it checks if <code>docker-compose</code> is installed and uses <code>docker-compose</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Environment Selection</strong>:</p>
+<ul>
+<li>Based on the <code>-e</code> flag, it sets the appropriate Docker Compose files:<ul>
+<li><code>prod</code>: Uses <code>docker-compose.yaml</code></li>
+<li><code>dev</code>: Uses <code>docker-compose.yaml</code> and <code>docker-compose.dev.yaml</code></li>
+<li><code>slim</code>: Uses <code>docker-compose.yaml</code> and <code>docker-compose.slim.yaml</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Build and Start Containers</strong>:</p>
+<ul>
+<li>The script builds and starts the Docker containers using the selected configuration files.</li>
+</ul>
+</li>
+</ol></div>
+</section>
+
+            </main>
+        </div>
+        <hr><footer>
+    <div class="terminal-mkdocs-footer-grid">
+        <div id="terminal-mkdocs-footer-copyright-info">
+             Site built with <a href="http://www.mkdocs.org">MkDocs</a> and <a href="https://github.com/ntno/mkdocs-terminal">Terminal for MkDocs</a>.
+        </div>
+        <div id="terminal-mkdocs-footer-prev-next">
+            <nav class="btn-group">
+                <a href=".." title="Home">Previous</a>
+                |
+                <a href="../env/" title="Environment">Next</a>
+            </nav>
+        </div>
+    </div>
+</footer>
+    </div>
+
+    
+    
+    
+</body>
+
+</html>
