@@ -402,15 +402,25 @@
 </nav><hr>
 <nav>
     <ul>
+        <li><a href="#rustybalancer-setup">RustyBalancer Setup</a></li>
         <li><a href="#setup">Setup</a></li>
         <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#configuration-files">Configuration Files</a></li><li><a href="#usage">Usage</a></li>
+        <li><a href="#configuration-files">Configuration Files</a></li><li><a href="#set-up-configuration-env">Set Up Configuration (.env)</a></li><li><a href="#usage">Usage</a></li>
     </ul>
 </nav>
 </aside>
             <main id="terminal-mkdocs-main-content">
 <section id="mkdocs-terminal-content">
-    <div><h1 id="setup">Setup</h1>
+    <div><h1 id="rustybalancer-setup">RustyBalancer Setup</h1>
+<p><strong>Table of Contents</strong> <br> <br>
+1. <a href="#setup">Setup</a> <br>
+2. <a href="#prerequisites">Prerequisites</a> <br>
+3. <a href="#configuration-files">Configuration Files</a> <br>
+4. <a href="#set-up-configuration">Set Up Configuration (.env)</a> <br>
+5. <a href="#usage">Usage</a></p>
+<hr>
+<p><a id="setup"></a></p>
+<h1 id="setup">Setup</h1>
 <p>Welcome to RustyBalancer!</p>
 <p>Follow the instructions and get familiar with the environment variables to properly get your workflow going.</p>
 <p>Have fun! 🦀</p>
@@ -441,9 +451,11 @@ You have two options:</p>
 </code></pre>
 <p>This repository contains Docker Compose configurations for different environments: production, development, and a slim environment. 
 The <code>run.sh</code> script located in the <code>jobs</code> directory allows you to easily build and start Docker containers for the specified environment.</p>
+<p><a id="prerequisites"></a></p>
 <h1 id="prerequisites">Prerequisites</h1>
 <p>Docker must be installed on your system. You can download it from <a href="https://www.docker.com/products/docker-desktop">Docker's official site</a>.
 If you are using macOS or Windows, <code>docker-compose</code> must also be installed. On Linux, <code>docker compose</code> (the Docker CLI plugin) is preferred.</p>
+<p><a id="configuration-files"></a></p>
 <h2 id="configuration-files">Configuration Files</h2>
 <p><code>docker-compose.yaml</code>:</p>
 <p>This file is designed to be used in a production environment where performance, reliability, and security are the primary concerns.
@@ -460,8 +472,16 @@ Includes more environment variables and configurations for the deployment-agent 
 This configuration helps to run the application with minimal overhead, making it ideal for testing or deployment in resource-constrained environments.</p>
 <p>Includes a lightweight setup without the dashboard and redis-insight service.
 Includes the same environment variables and configurations for the deployment-agent service as docker-compose.dev.yml.</p>
+<p><a id="set-up-configuration"></a></p>
+<h2 id="set-up-configuration-env">Set Up Configuration (.env)</h2>
+<pre><code class="language-bash">cd jobs
+./setup.sh
+</code></pre>
+<p>This script generates a <code>.env</code> file in the project root with your RustyBalancer configuration.</p>
+<p><a id="usage"></a></p>
 <h2 id="usage">Usage</h2>
 <p>The <code>run.sh</code> script is used to build and start the Docker containers. It takes a flag <code>-e</code> to specify the environment (<code>prod</code>, <code>dev</code>, or <code>slim</code>).</p>
+<p><a id="running-the-script"></a></p>
 <h3 id="running-the-script">Running the Script</h3>
 <p>Navigate to the <code>jobs</code> directory:</p>
 <pre><code class="language-shell">cd jobs
@@ -479,21 +499,9 @@ Includes the same environment variables and configurations for the deployment-ag
 <p>For the slim environment:</p>
 <pre><code class="language-shell">./run.sh -e slim
 </code></pre>
+<p><a id="script-explanation"></a></p>
 <h3 id="script-explanation">Script Explanation</h3>
-<p>The <code>run.sh</code> script checks for the operating system and determines whether to use <code>docker compose</code> or <code>docker-compose</code> based on the system's available commands. It then processes the <code>-e</code> flag to determine which Docker Compose files to use.</p>
-<p>Here's the logic breakdown:</p>
-<p><strong>OS and Command Check</strong>:</p>
-<p><strong>Linux:</strong> <br>
-Checks if <code>docker</code> is installed and uses <code>docker compose</code>.</p>
-<p><strong>Other Systems:</strong> <br>
-Checks if <code>docker-compose</code> is installed and uses <code>docker-compose</code>.</p>
-<p><strong>Environment Selection</strong>: <br>
-Based on the <code>-e</code> flag, it sets the appropriate Docker Compose files: <br>
-     - <code>prod</code>: Uses <code>docker-compose.yaml</code> <br>
-     - <code>dev</code>: Uses <code>docker-compose.yaml</code> and <code>docker-compose.dev.yaml</code> <br>
-     - <code>slim</code>: Uses <code>docker-compose.yaml</code> and <code>docker-compose.slim.yaml</code></p>
-<p><strong>Build and Start Containers</strong>: <br>
-The script builds and starts the Docker containers using the selected configuration files.</p></div>
+<p>The <code>run.sh</code> script checks for the operating system and determines whether to use <code>docker compose</code> or <code>docker-compose</code> based on the system's available commands. It then processes the <code>-e</code> flag to determine which Docker Compose files to use.</p></div>
 </section>
 
             </main>
