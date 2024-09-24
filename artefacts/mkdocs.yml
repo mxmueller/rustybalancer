@@ -7,7 +7,10 @@ theme:
 
 nav:
   - Home: 'index.md'
-  - Getting Started: 'setup.md'
+  - Getting Started:
+    - Index: 'getting-started.md'
+    - Setup: 'getting-started/setup.md'
+    - Environment: 'getting-started/env.md'
   - Components:
       - Index: 'components.md'
       - Balancer: 'components/balancer.md'
