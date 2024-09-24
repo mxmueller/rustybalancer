@@ -1,32 +1,39 @@
-
-## Installation Instructions
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/mxmueller/RustyBalancer.git
-   cd RustyBalancer
-   ```
-2. **Add current user to Docker group (if needed):**
-   ```bash
-   sudo usermod -aG docker $USER
-   ```
-
 # Setup
 
+**Clone the repository:**
+
+```bash
+git clone https://github.com/mxmueller/RustyBalancer.git
+cd RustyBalancer
+```
+
+
+**Add current user to Docker group (if needed):**
+
+   sudo usermod -aG docker $USER
 
 REMINDER, das hier müsse https://forums.docker.com/t/connection-refused-on-host-docker-internal/136925/2
 
 This repository contains Docker Compose configurations for different environments: production, development, and a slim environment. The `run.sh` script located in the `jobs` directory allows you to easily build and start Docker containers for the specified environment.
 
-## Prerequisites
+# Prerequisites
 
 - Docker must be installed on your system. You can download it from [Docker's official site](https://www.docker.com/products/docker-desktop).
 - If you are using macOS or Windows, `docker-compose` must also be installed. On Linux, `docker compose` (the Docker CLI plugin) is preferred.
 
 ## Configuration Files
 
-- `docker-compose.yaml`: The base configuration for the production environment.
-- `docker-compose.dev.yaml`: Additional configuration for the development environment.
-- `docker-compose.slim.yaml`: Additional configuration for a slim environment.
+- `docker-compose.yaml`: 
+ 
+The base configuration for the production environment.
+
+- `docker-compose.dev.yaml`: 
+
+Additional configuration for the development environment.
+
+- `docker-compose.slim.yaml`: 
+
+Additional configuration for a slim environment.
 
 ## Usage
 
@@ -34,34 +41,32 @@ The `run.sh` script is used to build and start the Docker containers. It takes a
 
 ### Running the Script
 
-1. Navigate to the `jobs` directory:
+Navigate to the `jobs` directory:
+```shell
+cd jobs
+```
 
-    ```sh
-    cd jobs
-    ```
+Make the script executable (if it isn't already):
+```shell
+chmod +x run.sh
+```
 
-2. Make the script executable (if it isn't already):
+Run the script with the desired environment:
 
-    ```sh
-    chmod +x run.sh
-    ```
+- For the production environment:
+```shell
+./run.sh -e prod
+```
 
-3. Run the script with the desired environment:
+- For the development environment:
+```shell
+./run.sh -e dev
+```
 
-    - For the production environment:
-      ```sh
-      ./run.sh -e prod
-      ```
-
-    - For the development environment:
-      ```sh
-      ./run.sh -e dev
-      ```
-
-    - For the slim environment:
-      ```sh
-      ./run.sh -e slim
-      ```
+- For the slim environment:
+```shell
+./run.sh -e slim
+```
 
 ### Script Explanation
 

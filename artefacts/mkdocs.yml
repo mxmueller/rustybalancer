@@ -8,4 +8,7 @@ theme:
 nav:
   - Home: 'index.md'
   - Getting Started: 'setup.md'
-  - Components: 'components.md'
+  - Components:
+      - Index: 'components.md'
+      - Balancer: 'components/balancer.md'
+      - Deployment Agent: 'components/deployment-agent.md'

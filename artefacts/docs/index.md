@@ -1,16 +1,16 @@
 
-<img src="./resources/logo.png" alt="Logo" width="250"/>
+<div style="text-align: center;">
+  <img src="../images/logo.png" alt="Logo" width="250"/>
+</div>
 
 # RustyBalancer
 
 RustyBalancer is a load balancer and deployment engine prototype, featuring:
+
 - **Probabilities** for distribution
 - **Proactive Handling**
 - **Load Balancer**
 - **Deployment Engine**
-
-### test
-
 
 ## Contributing
 
