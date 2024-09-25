@@ -29,6 +29,8 @@ nav:
       - Index: 'components.md'
       - Balancer: 'components/balancer.md'
       - Deployment Agent: 'components/deployment-agent.md'
+      - Redis: 'components/redis.md'
+      - Dashboard: 'components/dashboard.md'
   - Demo:
     - Index: 'tutorial.md'
     - Setup Process: './tutorial/setup.md'
