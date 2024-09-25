@@ -14,7 +14,11 @@ theme:
     - revision.date
     - revision.history
 
+markdown_extensions:
+  - attr_list
+
 plugins:
+  - mkdocs-pdf
   - search
   - mkdocs-video:
       css_style:
@@ -38,3 +42,4 @@ nav:
     - Key Components: './tutorial/components.md'
     - High Traffic Behavior: './tutorial/traffic.md'
     - Load Testing: './tutorial/load.md'
+  - Publications: publications.md
