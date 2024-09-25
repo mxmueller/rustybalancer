@@ -2,50 +2,58 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/components/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/env/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/setup/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/tutorial/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/components/balancer/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
+    </url>
+    <url>
+         <loc>https://mxmueller.github.io/rustybalancer/components/dashboard/</loc>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/components/deployment-agent/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
+    </url>
+    <url>
+         <loc>https://mxmueller.github.io/rustybalancer/components/redis/</loc>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/tutorial/components/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/tutorial/load/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/tutorial/setup/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/tutorial/startup/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
     <url>
          <loc>https://mxmueller.github.io/rustybalancer/tutorial/traffic/</loc>
-         <lastmod>2024-09-24</lastmod>
+         <lastmod>2024-09-25</lastmod>
     </url>
 </urlset>
