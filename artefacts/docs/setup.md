@@ -1,6 +1,6 @@
 ## Quick Start
 
-### 1. Clone the repository
+### Clone the repository
 
 Choose one of the following methods:
 
@@ -21,18 +21,18 @@ Then navigate to the project directory:
 cd RustyBalancer
 ```
 
-### 2. Run the setup script
+### Run the setup script
 
 ```bash
 cd jobs
 ./setup.sh
 ```
 
-### 3. Configure the .env file
+### Configure the .env file
 
 Open the `.env` file in the project root directory.
 
-### 4. Set Docker image and port
+### Set Docker image and port
 
 In the `.env` file, set your desired Docker image and its corresponding port. For example:
 ```
@@ -48,12 +48,32 @@ TARGET_PORT=80
 
 Note: Currently, only images using a single port are supported. The specified image will be distributed and scaled across workers.
 
-### 5. Run RustyBalancer
+### Run RustyBalancer
 
 ```bash
 cd jobs
 ./run.sh -e dev  # For dev Enviroment
 ```
+If the Plug-and-Play variant was selected in the setup, the artifacts are available as follows:
+
+| URL | Description |
+|-----|-------------|
+| http://localhost:2548 | Load balancer page where the pages hosted in the workers can be accessed |
+| http://localhost:2550/stats | Raw data of stats for all containers. Updated when the route is called. |
+| http://localhost:8501 | Application dashboard (Only in the Dev variant) |
+| http://localhost:5540 | Redis Insights (Only in the Dev variant) |
+
+----
+## Important!
+
+When changing the image or if environment changes are not loading, you must:
+
+1. Stop all running Containers
+2. Either manually remove all containers affected by the environment variable changes.
+3. Or, if the image has been changed, remove all containers with the `APP_IDENTIFIER` from the environment.
+
+Alternatively, you can run `reset.sh` located in the `./jobs/` directory, which performs these actions automatically. After that u can  re-run with `run.sh`
+
 ----
 
 ## Detailed Explanation

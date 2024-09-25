@@ -4,4 +4,7 @@ When you initiate the system for the first time, it's crucial to exercise patien
 # for this example the dev variant is used
 /jobs/run.sh -e dev
 ```
+
+For more instructions see the [How To Setup](https://mxmueller.github.io/rustybalancer/setup/)
+
 ![type:video](https://www.youtube.com/embed/lni-_zYdDKU)

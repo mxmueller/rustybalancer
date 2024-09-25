@@ -4,4 +4,6 @@ The setup process is a crucial first step in implementing a load balancer. These
 /jobs/setup.sh
 ```
 
+Read the chapter on [How To Setup](https://mxmueller.github.io/rustybalancer/setup/)
+
 ![type:video](https://www.youtube.com/embed/Y5WS_0zZ8OY)
