@@ -468,6 +468,7 @@
 <nav>
     <ul>
         <li><a href="#load-testing">Load Testing</a></li>
+        <li><a href="#prerequisites">Prerequisites</a></li><li><a href="#running-the-test">Running the Test</a></li><li><a href="#quick-test">Quick Test</a></li><li><a href="#important-notes">Important Notes</a></li><li><a href="#demo">Demo</a></li>
         
     </ul>
 </nav>
@@ -475,8 +476,54 @@
             <main id="terminal-mkdocs-main-content">
 <section id="mkdocs-terminal-content">
     <div><h1 id="load-testing">Load Testing</h1>
-<p>Rigorous testing is vital to ensure your load balancer can handle real-world scenarios. This section presents multiple approaches to stress-testing, providing you with the tools to verify your system's performance and identify potential bottlenecks before they become issues.
-<div class="video-container"><iframe src="https://www.youtube.com/embed/R8HqdfwrEWU" style="width:100%;height:18.172vw" frameborder="0" allowfullscreen alt="type:video"></iframe></div></p></div>
+<p>Rigorous testing is vital to ensure your load balancer can handle real-world scenarios.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Ensure Rust is installed on your system.</li>
+<li>RustBalancer is running with the following configuration:</li>
+</ul>
+<pre><code>DOCKER_IMAGE=mxmller/rustybalancer-playground:latest
+TARGET_PORT=5000
+</code></pre>
+<pre><code>HIGH_LOAD_THRESHOLD=60.0
+LOW_LOAD_THRESHOLD=75.0
+CRITICAL_LOAD_THRESHOLD=30.0
+</code></pre>
+<p>This configuration means: <br>
+- A new container starts when the average score reaches 60 <br>
+- A container is removed if its score falls below 30 <br>
+- New containers are shut down when the avg score recovers to 75</p>
+<p>The test suite has been pulled from Git:
+   Either recursively pulled with submodules when pulling RustBalancer or separately pulled from https://github.com/mxmueller/rustybalancer-test-suite/</p>
+<p>If pulled recursively, the repo will be located in <code>./tests/</code></p>
+<h2 id="running-the-test">Running the Test</h2>
+<ol>
+<li>With RustBalancer running, navigate to <code>./http-stress</code></li>
+<li>Follow the tutorial in the README for detailed instructions</li>
+</ol>
+<h2 id="quick-test">Quick Test</h2>
+<p>For a simple test, run:</p>
+<pre><code class="language-bash">cargo run --release -- http://localhost:2548 15 500 3
+</code></pre>
+<p>This command:
+- Generates 15 requests per second
+- Runs for 500 seconds
+- Has a varying load with a maximum of 3 (considered high)</p>
+<h2 id="important-notes">Important Notes</h2>
+<ol>
+  <li>Local tests are always limited by the performance of the host's network adapter and operating system.</li>
+  <li>This example will demonstrate:
+    <ol>
+      <li>The load suddenly becoming very high</li>
+      <li>New containers starting up to the set maximum number</li>
+      <li>Containers being shut down when the test ends</li>
+    </ol>
+  </li>
+</ol>
+
+<hr>
+<h1 id="demo">Demo</h1>
+<p><div class="video-container"><iframe src="https://www.youtube.com/embed/R8HqdfwrEWU" style="width:100%;height:18.172vw" frameborder="0" allowfullscreen alt="type:video"></iframe></div></p></div>
 </section>
 
             </main>

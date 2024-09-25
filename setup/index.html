@@ -468,7 +468,8 @@
 <nav>
     <ul>
         <li><a href="#quick-start">Quick Start</a></li>
-        <li><a href="#1-clone-the-repository">1. Clone the repository</a></li><li><a href="#2-run-the-setup-script">2. Run the setup script</a></li><li><a href="#3-configure-the-env-file">3. Configure the .env file</a></li><li><a href="#4-set-docker-image-and-port">4. Set Docker image and port</a></li><li><a href="#5-run-rustybalancer">5. Run RustyBalancer</a></li><li><a href="#detailed-explanation">Detailed Explanation</a></li>
+        <li><a href="#clone-the-repository">Clone the repository</a></li><li><a href="#run-the-setup-script">Run the setup script</a></li><li><a href="#configure-the-env-file">Configure the .env file</a></li><li><a href="#set-docker-image-and-port">Set Docker image and port</a></li><li><a href="#run-rustybalancer">Run RustyBalancer</a></li><li><a href="#important">Important!</a></li>
+        <li><a href="#detailed-explanation">Detailed Explanation</a></li>
         <li><a href="#repository-cloning-options">Repository Cloning Options</a></li><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#configuration-files">Configuration Files</a></li><li><a href="#environment-setup">Environment Setup</a></li><li><a href="#running-rustybalancer">Running RustyBalancer</a></li><li><a href="#docker-group-if-needed">Docker Group (if needed)</a></li>
     </ul>
 </nav>
@@ -476,7 +477,7 @@
             <main id="terminal-mkdocs-main-content">
 <section id="mkdocs-terminal-content">
     <div><h2 id="quick-start">Quick Start</h2>
-<h3 id="1-clone-the-repository">1. Clone the repository</h3>
+<h3 id="clone-the-repository">Clone the repository</h3>
 <p>Choose one of the following methods:</p>
 <ul>
 <li>Basic clone (core codebase only):</li>
@@ -491,13 +492,13 @@
 <p>Then navigate to the project directory:</p>
 <pre><code class="language-bash">cd RustyBalancer
 </code></pre>
-<h3 id="2-run-the-setup-script">2. Run the setup script</h3>
+<h3 id="run-the-setup-script">Run the setup script</h3>
 <pre><code class="language-bash">cd jobs
 ./setup.sh
 </code></pre>
-<h3 id="3-configure-the-env-file">3. Configure the .env file</h3>
+<h3 id="configure-the-env-file">Configure the .env file</h3>
 <p>Open the <code>.env</code> file in the project root directory.</p>
-<h3 id="4-set-docker-image-and-port">4. Set Docker image and port</h3>
+<h3 id="set-docker-image-and-port">Set Docker image and port</h3>
 <p>In the <code>.env</code> file, set your desired Docker image and its corresponding port. For example:</p>
 <pre><code>DOCKER_IMAGE=your-docker-image
 TARGET_PORT=your-image-port
@@ -507,10 +508,46 @@ TARGET_PORT=your-image-port
 TARGET_PORT=80
 </code></pre>
 <p>Note: Currently, only images using a single port are supported. The specified image will be distributed and scaled across workers.</p>
-<h3 id="5-run-rustybalancer">5. Run RustyBalancer</h3>
+<h3 id="run-rustybalancer">Run RustyBalancer</h3>
 <pre><code class="language-bash">cd jobs
 ./run.sh -e dev  # For dev Enviroment
 </code></pre>
+<p>If the Plug-and-Play variant was selected in the setup, the artifacts are available as follows:</p>
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>http://localhost:2548</td>
+<td>Load balancer page where the pages hosted in the workers can be accessed</td>
+</tr>
+<tr>
+<td>http://localhost:2550/stats</td>
+<td>Raw data of stats for all containers. Updated when the route is called.</td>
+</tr>
+<tr>
+<td>http://localhost:8501</td>
+<td>Application dashboard (Only in the Dev variant)</td>
+</tr>
+<tr>
+<td>http://localhost:5540</td>
+<td>Redis Insights (Only in the Dev variant)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="important">Important!</h2>
+<p>When changing the image or if environment changes are not loading, you must:</p>
+<ol>
+<li>Stop all running Containers</li>
+<li>Either manually remove all containers affected by the environment variable changes.</li>
+<li>Or, if the image has been changed, remove all containers with the <code>APP_IDENTIFIER</code> from the environment.</li>
+</ol>
+<p>Alternatively, you can run <code>reset.sh</code> located in the <code>./jobs/</code> directory, which performs these actions automatically. After that u can  re-run with <code>run.sh</code></p>
 <hr>
 <h2 id="detailed-explanation">Detailed Explanation</h2>
 <h3 id="repository-cloning-options">Repository Cloning Options</h3>

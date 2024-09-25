@@ -468,6 +468,8 @@
 <nav>
     <ul>
         <li><a href="#high-traffic-behavior">High Traffic Behavior</a></li>
+        <li><a href="#rustbalancer-load-testing-guide">RustBalancer Load Testing Guide</a></li>
+        <li><a href="#prerequisites">Prerequisites</a></li><li><a href="#running-the-test">Running the Test</a></li><li><a href="#quick-test">Quick Test</a></li><li><a href="#important-note">Important Note</a></li><li><a href="#demo">Demo</a></li>
         
     </ul>
 </nav>
@@ -475,8 +477,37 @@
             <main id="terminal-mkdocs-main-content">
 <section id="mkdocs-terminal-content">
     <div><h1 id="high-traffic-behavior">High Traffic Behavior</h1>
-<p>Adaptability is at the heart of effective load balancing. These videos demonstrate how load balancers dynamically adjust to changing traffic demands, showcasing their ability to maintain optimal performance as your needs grow or fluctuate.
-<div class="video-container"><iframe src="https://www.youtube.com/embed/2EDIacuXl6c" style="width:100%;height:18.172vw" frameborder="0" allowfullscreen alt="type:video"></iframe></div></p></div>
+<p>Adaptability is at the heart of effective load balancing. These videos demonstrate how load balancers dynamically adjust to changing traffic demands, showcasing their ability to maintain optimal performance as your needs grow or fluctuate.</p>
+<hr>
+<h1 id="rustbalancer-load-testing-guide">RustBalancer Load Testing Guide</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Ensure Rust is installed on your system.</li>
+<li>RustBalancer is running with the following configuration:</li>
+</ul>
+<pre><code>DOCKER_IMAGE=traefik/whoami
+TARGET_PORT=80
+</code></pre>
+<ul>
+<li>The test suite has been pulled from Git:
+   Either recursively pulled with submodules when pulling RustBalancer, or separately pulled from https://github.com/mxmueller/rustybalancer-test-suite/</li>
+</ul>
+<p>If pulled recursively, the repo will be located in <code>./tests/</code></p>
+<h2 id="running-the-test">Running the Test</h2>
+<ol>
+<li>With RustBalancer running, navigate to <code>./http-stress</code></li>
+<li>Follow the tutorial in the README for detailed instructions</li>
+</ol>
+<h2 id="quick-test">Quick Test</h2>
+<p>For a simple test, run:</p>
+<pre><code class="language-bash">cargo run --release -- http://localhost:2548 5000 200 0
+</code></pre>
+<p>This command generates 5000 requests per second. The second paramter represents the time duration of the test. The last on has to be null for this setup.</p>
+<h2 id="important-note">Important Note</h2>
+<p>Local tests are always limited by the performance of the host's network adapter and operating system.</p>
+<hr>
+<h1 id="demo">Demo</h1>
+<p><div class="video-container"><iframe src="https://www.youtube.com/embed/2EDIacuXl6c" style="width:100%;height:18.172vw" frameborder="0" allowfullscreen alt="type:video"></iframe></div></p></div>
 </section>
 
             </main>
